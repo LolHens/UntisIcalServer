@@ -1,4 +1,4 @@
-package org.lolhens.untisicsserver
+package org.lolhens.untisicalserver
 
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
@@ -13,7 +13,7 @@ object FakeSSL {
     def verify(hostname: String, session: SSLSession): Boolean = true
   }
 
-  class FakeX509TrustManager extends X509TrustManager {
+  private class FakeX509TrustManager extends X509TrustManager {
     def checkClientTrusted(chain: Array[X509Certificate], authType: String): Unit = ()
 
     def checkServerTrusted(chain: Array[X509Certificate], authType: String): Unit = ()
@@ -22,11 +22,11 @@ object FakeSSL {
   }
 
   object FakeSSLContext {
-    private lazy val _trustManagers: Array[TrustManager] = Array(new FakeX509TrustManager())
+    private lazy val _trustManagers = Array[TrustManager](new FakeX509TrustManager())
 
     def apply() = {
-      val context = SSLContext.getInstance("SSL")
-      context.init(null, _trustManagers, new SecureRandom)
+      val context = SSLContext.getInstance("TLS")
+      context.init(null, _trustManagers, new SecureRandom())
       context
     }
   }

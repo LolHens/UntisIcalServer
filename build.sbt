@@ -1,4 +1,4 @@
-name := "UntisIclServer"
+name := "UntisIcalServer"
 
 lazy val settings = Seq(
   version := "0.0.0",
@@ -27,13 +27,14 @@ lazy val settings = Seq(
     "io.spray" %% "spray-json" % "1.3.2",
     "com.github.fommil" %% "spray-json-shapeless" % "1.2.0",
     "com.iheart" %% "ficus" % "1.2.0",
-    "net.databinder.dispatch" %% "dispatch-core" % "0.11.3"
+    "net.databinder.dispatch" %% "dispatch-core" % "0.11.3",
+    "org.mnode.ical4j" % "ical4j" % "2.0-beta1"
   ),
 
   scalacOptions ++= Seq("-Xmax-classfile-name", "254")
 )
 
-lazy val root = Project("untisiclserver", file("."))
+lazy val root = Project("untisicalserver", file("."))
   .enablePlugins(
     JavaAppPackaging,
     UniversalPlugin)
