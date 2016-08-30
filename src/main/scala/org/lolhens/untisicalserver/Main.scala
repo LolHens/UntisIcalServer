@@ -6,7 +6,9 @@ import java.util.Locale
 
 import dispatch._
 import net.fortuna.ical4j.model.Calendar
-import org.lolhens.untisicalserver.ical.{ICalProvider, ICalSplicer, ICalTransformer}
+import org.lolhens.untisicalserver.ical.ICalReceiver
+import org.lolhens.untisicalserver.ical.ICalSplicer
+import org.lolhens.untisicalserver.ical.ICalTransformer
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -15,19 +17,21 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Created by pierr on 29.08.2016.
   */
 object Main {
+  val nixdorfFs15b = SchoolClass("nixdorf_bk_essen", "FS-15B", 183)
+
   def main(args: Array[String]): Unit = {
-    weekCalendars(SchoolClass("nixdorf_bk_essen", 183))
+    weekCalendars(nixdorfFs15b)
       .map(calendars =>
         ICalSplicer(calendars
           .map(ICalTransformer(_))))
       .onSuccess {
-        case values =>
-          println(values)
+        case calendar =>
+          println(calendar)
       }
   }
 
   def weekCalendars(schoolClass: SchoolClass): Future[List[Calendar]] = {
-    val iCalProvider = new ICalProvider(schoolClass)
+    val iCalProvider = new ICalReceiver(schoolClass)
 
     val now = LocalDate.now()
 
