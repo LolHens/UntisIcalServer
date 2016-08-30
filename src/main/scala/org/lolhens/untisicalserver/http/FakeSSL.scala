@@ -1,4 +1,4 @@
-package org.lolhens.untisicalserver
+package org.lolhens.untisicalserver.http
 
 import java.security.SecureRandom
 import java.security.cert.X509Certificate

@@ -1,13 +1,14 @@
 package org.lolhens.untisicalserver
 
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
-import javax.net.ssl._
+import java.time.LocalDate
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 import dispatch._
+import net.fortuna.ical4j.model.Calendar
+import org.lolhens.untisicalserver.ical.{ICalProvider, ICalSplicer, ICalTransformer}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
 
 
 /**
@@ -15,11 +16,25 @@ import scala.util.{Failure, Success}
   */
 object Main {
   def main(args: Array[String]): Unit = {
-    val iCalProvider = new ICalProvider("nixdorf_bk_essen", 183)
-    iCalProvider.forRange(2016, -100 to 100) onSuccess {
-      case values =>
-        println(values)
-    }
+    weekCalendars(SchoolClass("nixdorf_bk_essen", 183))
+      .map(calendars =>
+        ICalSplicer(calendars
+          .map(ICalTransformer(_))))
+      .onSuccess {
+        case values =>
+          println(values)
+      }
+  }
+
+  def weekCalendars(schoolClass: SchoolClass): Future[List[Calendar]] = {
+    val iCalProvider = new ICalProvider(schoolClass)
+
+    val now = LocalDate.now()
+
+    val weekFields = WeekFields.of(Locale.getDefault())
+    val week = now.get(weekFields.weekOfWeekBasedYear())
+
+    iCalProvider.forRange(now.getYear, (week - 10) to (week + 40))
   }
 }
 

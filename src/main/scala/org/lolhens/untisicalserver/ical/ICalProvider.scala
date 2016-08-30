@@ -1,4 +1,4 @@
-package org.lolhens.untisicalserver
+package org.lolhens.untisicalserver.ical
 
 import java.io.StringReader
 import java.time.LocalDate
@@ -7,13 +7,14 @@ import java.util.Locale
 
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Calendar
-import org.lolhens.untisicalserver.ICalProvider._
+import org.lolhens.untisicalserver.SchoolClass
+import org.lolhens.untisicalserver.http.StringReceiver
+import org.lolhens.untisicalserver.ical.ICalProvider._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ICalProvider(val schoolName: String,
-                   val classId: Int) {
+class ICalProvider(val schoolClass: SchoolClass) {
 
   def apply(year: Int, week: Int): Future[Calendar] = {
     val date = dateOfWeek(year, week)
@@ -24,7 +25,8 @@ class ICalProvider(val schoolName: String,
     val monthString = padInt(date.getMonthValue, 2)
     val dayString = padInt(date.getDayOfMonth, 2)
 
-    val iCalUrl = s"https://mese.webuntis.com/WebUntis/Ical.do?school=$schoolName&elemType=1&elemId=$classId&rpt_sd=$yearString-$monthString-$dayString"
+    val iCalUrl =
+      s"https://mese.webuntis.com/WebUntis/Ical.do?school=${schoolClass.school}&elemType=1&elemId=${schoolClass.classId}&rpt_sd=$yearString-$monthString-$dayString"
 
     StringReceiver.receive(iCalUrl).map { iCalString =>
       new CalendarBuilder().build(new StringReader(iCalString))

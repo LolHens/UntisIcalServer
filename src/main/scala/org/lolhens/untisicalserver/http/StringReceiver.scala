@@ -1,4 +1,4 @@
-package org.lolhens.untisicalserver
+package org.lolhens.untisicalserver.http
 
 import dispatch.{Http, as, url}
 
