@@ -1,6 +1,8 @@
 package org.lolhens.untisicalserver.http.client
 
-import dispatch.{Http, as, url}
+import dispatch.Http
+import dispatch.as
+import dispatch.url
 import org.lolhens.untisicalserver.http.FakeSSL
 
 import scala.concurrent.ExecutionContext.Implicits.global

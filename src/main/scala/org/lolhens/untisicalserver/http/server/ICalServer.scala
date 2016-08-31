@@ -5,9 +5,14 @@ import java.nio.charset.StandardCharsets
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri, _}
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import org.lolhens.untisicalserver.ical.ICalProvider
 
 import scala.concurrent.Future
@@ -27,7 +32,7 @@ class ICalServer(val iCalProvider: ICalProvider) {
     val bindingFuture: Future[Http.ServerBinding] =
       serverSource.to(Sink.foreach { connection =>
         connection.handleWith(Flow[HttpRequest].collect {
-          case HttpRequest(GET, Uri.Path("/ical/fs15b"), _, _, _) =>
+          case HttpRequest(GET, Uri.Path("/ical/fs15b.ics"), _, _, _) =>
             HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, iCalProvider().toString.getBytes(StandardCharsets.UTF_8)))
 
           case r: HttpRequest =>

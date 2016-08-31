@@ -4,7 +4,7 @@ import java.util.function.Predicate
 
 import net.fortuna.ical4j.model._
 import net.fortuna.ical4j.model.component.CalendarComponent
-import org.lolhens.untisicalserver.SchoolClass
+import org.lolhens.untisicalserver.util.SchoolClass
 
 import scala.collection.JavaConversions._
 
@@ -29,7 +29,7 @@ object ICalTransformer {
             (split.dropRight(1), split.last)
           }
 
-          if (classNames.contains(schoolClass.className)) {
+          if (classNames.contains(schoolClass.className) && summary != "Förder") {
             component.getProperty(Property.SUMMARY).setValue(s"$summary $teacher")
             removeProperty(component, Property.DESCRIPTION)
 

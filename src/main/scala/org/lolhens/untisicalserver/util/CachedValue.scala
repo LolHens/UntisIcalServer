@@ -1,4 +1,4 @@
-package org.lolhens.untisicalserver
+package org.lolhens.untisicalserver.util
 
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit

@@ -2,6 +2,7 @@ package org.lolhens.untisicalserver
 
 import org.lolhens.untisicalserver.http.server.ICalServer
 import org.lolhens.untisicalserver.ical.CachedICalProvider
+import org.lolhens.untisicalserver.util.SchoolClass
 
 import scala.concurrent.duration._
 import scala.language.postfixOps

@@ -1,7 +1,7 @@
 package org.lolhens.untisicalserver.ical
 
 import net.fortuna.ical4j.model.Calendar
-import org.lolhens.untisicalserver.SchoolClass
+import org.lolhens.untisicalserver.util.SchoolClass
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global

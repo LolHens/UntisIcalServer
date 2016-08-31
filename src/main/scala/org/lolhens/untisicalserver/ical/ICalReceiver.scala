@@ -7,9 +7,9 @@ import java.util.Locale
 
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Calendar
-import org.lolhens.untisicalserver.SchoolClass
 import org.lolhens.untisicalserver.http.client.StringReceiver
 import org.lolhens.untisicalserver.ical.ICalReceiver._
+import org.lolhens.untisicalserver.util.SchoolClass
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -30,7 +30,7 @@ class ICalReceiver(val schoolClass: SchoolClass) {
     val iCalUrl =
       s"https://mese.webuntis.com/WebUntis/Ical.do?school=${schoolClass.school}&elemType=1&elemId=${schoolClass.classId}&rpt_sd=$yearString-$monthString-$dayString"
 
-    StringReceiver.receive(iCalUrl)(5 seconds).map { iCalString =>
+    StringReceiver.receive(iCalUrl)(20 seconds).map { iCalString =>
       Some(new CalendarBuilder().build(new StringReader(iCalString)))
     }.fallbackTo(Future.successful(None))
   }
