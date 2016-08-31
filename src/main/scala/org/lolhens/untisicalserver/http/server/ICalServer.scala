@@ -27,7 +27,7 @@ class ICalServer(val iCalProvider: ICalProvider) {
     implicit val executionContext = system.dispatcher
 
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
-      Http().bind(interface = "localhost", port = 8080)
+      Http().bind(interface = "0.0.0.0", port = 8080)
 
     val bindingFuture: Future[Http.ServerBinding] =
       serverSource.to(Sink.foreach { connection =>
