@@ -30,9 +30,14 @@ class ICalReceiver(val schoolClass: SchoolClass) {
     val iCalUrl =
       s"https://mese.webuntis.com/WebUntis/Ical.do?school=${schoolClass.school}&elemType=1&elemId=${schoolClass.classId}&rpt_sd=$yearString-$monthString-$dayString"
 
-    StringReceiver.receive(iCalUrl)(20 seconds).map { iCalString =>
+    def receive = StringReceiver.receive(iCalUrl)(10 seconds).map { iCalString =>
       Some(new CalendarBuilder().build(new StringReader(iCalString)))
-    }.fallbackTo(Future.successful(None))
+    }
+
+    receive
+      .fallbackTo(receive)
+      .fallbackTo(receive)
+      .fallbackTo(Future.successful(None))
   }
 
   def forRange(year: Int, weeks: Range): Future[List[Calendar]] = Future.sequence(weeks.map(apply(year, _)).toList).map(_.flatMap(_.toList))
