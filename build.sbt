@@ -11,7 +11,6 @@ lazy val settings = Seq(
     "org.apache.commons" % "commons-lang3" % "3.4",
     "commons-io" % "commons-io" % "2.5",
     "com.thoughtworks.xstream" % "xstream" % "1.4.9",
-    "ch.qos.logback" % "logback-classic" % "1.1.7",
     "org.scala-lang" % "scala-compiler" % "2.11.8",
     "org.scala-lang" % "scala-reflect" % "2.11.8",
     "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",

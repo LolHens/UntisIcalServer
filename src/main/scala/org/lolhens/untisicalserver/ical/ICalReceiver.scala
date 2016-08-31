@@ -8,17 +8,20 @@ import java.util.Locale
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Calendar
 import org.lolhens.untisicalserver.SchoolClass
-import org.lolhens.untisicalserver.http.StringReceiver
+import org.lolhens.untisicalserver.http.client.StringReceiver
 import org.lolhens.untisicalserver.ical.ICalReceiver._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class ICalReceiver(val schoolClass: SchoolClass) {
-  def apply(year: Int, week: Int): Future[Calendar] = {
+  def apply(year: Int, week: Int): Future[Option[Calendar]] = {
     val date = dateOfWeek(year, week)
 
-    def padInt(int: Int, digits: Int): String = int.toString.reverse.padTo(digits, "0").reverse.mkString
+    def padInt(int: Int, digits: Int): String =
+      int.toString.reverse.padTo(digits, "0").reverse.mkString
 
     val yearString = padInt(date.getYear, 4)
     val monthString = padInt(date.getMonthValue, 2)
@@ -27,12 +30,12 @@ class ICalReceiver(val schoolClass: SchoolClass) {
     val iCalUrl =
       s"https://mese.webuntis.com/WebUntis/Ical.do?school=${schoolClass.school}&elemType=1&elemId=${schoolClass.classId}&rpt_sd=$yearString-$monthString-$dayString"
 
-    StringReceiver.receive(iCalUrl).map { iCalString =>
-      new CalendarBuilder().build(new StringReader(iCalString))
-    }
+    StringReceiver.receive(iCalUrl)(5 seconds).map { iCalString =>
+      Some(new CalendarBuilder().build(new StringReader(iCalString)))
+    }.fallbackTo(Future.successful(None))
   }
 
-  def forRange(year: Int, weeks: Range): Future[List[Calendar]] = Future.sequence(weeks.map(apply(year, _)).toList)
+  def forRange(year: Int, weeks: Range): Future[List[Calendar]] = Future.sequence(weeks.map(apply(year, _)).toList).map(_.flatMap(_.toList))
 
   def currentCalendars(back: Int = 10, forward: Int = 40): Future[List[Calendar]] = {
     val now = LocalDate.now()
