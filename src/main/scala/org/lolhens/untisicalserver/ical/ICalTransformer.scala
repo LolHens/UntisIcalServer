@@ -1,10 +1,8 @@
 package org.lolhens.untisicalserver.ical
 
-import java.util.function.Predicate
-
 import net.fortuna.ical4j.model._
-import net.fortuna.ical4j.model.component.CalendarComponent
-import org.lolhens.untisicalserver.util.SchoolClass
+import net.fortuna.ical4j.model.component.VEvent
+import org.lolhens.untisicalserver.data.SchoolClass
 
 import scala.collection.JavaConversions._
 
@@ -13,41 +11,28 @@ import scala.collection.JavaConversions._
   */
 object ICalTransformer {
   def apply(schoolClass: SchoolClass, calendar: Calendar): Calendar = {
-    def removeProperty(component: CalendarComponent, name: String) =
-      component.getProperties().removeIf(new Predicate[Property]() {
-        override def test(t: Property): Boolean = t.getName.equalsIgnoreCase(name)
-      })
-
-    val components = ComponentList(
+    val components =
       calendar.getComponents().toList
-        .flatMap { component =>
-          val summary = component.getProperty(Property.SUMMARY).getValue
+        .flatMap {
+          case event: VEvent =>
+            val summary = event.getSummary.getValue
+            val description = event.getDescription.getValue
 
-          val (classNames, teacher) = {
-            val description = component.getProperty(Property.DESCRIPTION).getValue
-            val split = description.split(" ")
-            (split.dropRight(1), split.last)
-          }
+            val (classNames, teacher) = {
+              val split = description.split(" ")
+              (split.dropRight(1), split.last)
+            }
 
-          if (classNames.contains(schoolClass.className) && summary != "Förder") {
-            component.getProperty(Property.SUMMARY).setValue(s"$summary $teacher")
-            removeProperty(component, Property.DESCRIPTION)
+            event.getSummary.setValue(s"$summary $teacher")
+            event.getDescription.setValue(schoolClass.teacherProvider.flatMap(_.getRealName(teacher)).getOrElse(""))
 
+            if (classNames.contains(schoolClass.className) && summary != "Förder") List(event) else Nil
+
+          case component =>
             List(component)
-          } else
-            Nil
         }
-    )
 
-    new Calendar(
-      calendar.getProperties(),
-      components
-    )
-  }
-
-  def ComponentList[E <: Component](components: List[E]) = {
-    val componentList = new ComponentList[E]()
-    componentList.addAll(components)
-    componentList
+    calendar.setComponents(components)
+    calendar
   }
 }

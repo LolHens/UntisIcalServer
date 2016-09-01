@@ -5,14 +5,9 @@ import java.nio.charset.StandardCharsets
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri, _}
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import org.lolhens.untisicalserver.ical.ICalProvider
 
 import scala.concurrent.Future

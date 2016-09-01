@@ -1,8 +1,8 @@
 package org.lolhens.untisicalserver.ical
 
 import net.fortuna.ical4j.model.Calendar
+import org.lolhens.untisicalserver.data.SchoolClass
 import org.lolhens.untisicalserver.util.CachedValue
-import org.lolhens.untisicalserver.util.SchoolClass
 
 import scala.concurrent.duration.Duration
 

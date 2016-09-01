@@ -7,9 +7,9 @@ import java.util.Locale
 
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Calendar
+import org.lolhens.untisicalserver.data.SchoolClass
 import org.lolhens.untisicalserver.http.client.StringReceiver
 import org.lolhens.untisicalserver.ical.ICalReceiver._
-import org.lolhens.untisicalserver.util.SchoolClass
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

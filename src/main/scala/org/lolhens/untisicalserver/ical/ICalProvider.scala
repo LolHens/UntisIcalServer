@@ -1,8 +1,9 @@
 package org.lolhens.untisicalserver.ical
 
 import net.fortuna.ical4j.model.Calendar
-import org.lolhens.untisicalserver.util.SchoolClass
+import org.lolhens.untisicalserver.data.SchoolClass
 
+import scala.collection.JavaConversions._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -14,9 +15,13 @@ class ICalProvider(val schoolClass: SchoolClass) {
       new ICalReceiver(schoolClass).currentCalendars()
 
     val calendarFuture = currentCalendars.map { calendars =>
-      ICalSplicer(
+      val calendar = ICalSplicer(
         calendars.map(ICalTransformer(schoolClass, _))
       )
+
+      calendar.setComponents(ICalEventMerger(calendar.getComponents.toList))
+
+      calendar
     }
 
     Await.result(calendarFuture, 5 minutes)
