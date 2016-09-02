@@ -1,5 +1,9 @@
 package org.lolhens.untisicalserver.data
 
+import org.lolhens.untisicalserver.ical.CachedICalProvider
+
+import scala.concurrent.duration._
+
 /**
   * Created by pierr on 30.08.2016.
   */
@@ -13,23 +17,28 @@ case class SchoolClass(school: String,
 
   def getLessonInfo(lesson: String): Option[String] =
     lessonInfo.get(lesson.toLowerCase)
+
+  lazy val iCalProvider = new CachedICalProvider(this, 5 minutes)
 }
 
 object SchoolClass {
-  val nixdorfFs15b = SchoolClass("nixdorf_bk_essen", "FS-15B", 183, Map(
-    "feh" -> "Herr Fehlen",
-    "krg" -> "Herr Krieg",
-    "kri" -> "Frau Krigel",
-    "meh" -> "Herr Mehl",
-    "bol" -> "Herr Boll",
-    "abl" -> "Frau Abel",
-    "dib" -> "Frau Diblik",
-    "win" -> "Frau Wingold"
-  ), Map(
-    "it1" -> "Linux",
-    "it2" -> "Cisco Praxis",
-    "it3" -> "Theorie",
-    "aw1" -> "Programmieren",
-    "aw2" -> "Datenbanken"
-  ))
+  val classes = Map(
+    "fs15b" ->
+      SchoolClass("nixdorf_bk_essen", "FS-15B", 183, Map(
+        "feh" -> "Herr Fehlen",
+        "krg" -> "Herr Krieg",
+        "kri" -> "Frau Krigel",
+        "meh" -> "Herr Mehl",
+        "bol" -> "Herr Boll",
+        "abl" -> "Frau Abel",
+        "dib" -> "Frau Diblik",
+        "win" -> "Frau Wingold"
+      ), Map(
+        "it1" -> "Linux",
+        "it2" -> "Cisco Praxis",
+        "it3" -> "Theorie",
+        "aw1" -> "Programmieren",
+        "aw2" -> "Datenbanken"
+      ))
+  )
 }
