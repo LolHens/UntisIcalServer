@@ -23,7 +23,7 @@ object ICalTransformer {
               (split.dropRight(1), split.last)
             }
 
-            event.getSummary.setValue(s"$lesson $teacher")
+            event.getSummary.setValue(s"$lesson")
             event.getDescription.setValue(
               s"""$lesson${
                 schoolClass.getLessonInfo(lesson).map(e => s" $e").getOrElse("")
