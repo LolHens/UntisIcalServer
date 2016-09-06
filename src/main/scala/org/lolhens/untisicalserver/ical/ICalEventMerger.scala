@@ -1,6 +1,7 @@
 package org.lolhens.untisicalserver.ical
 
-import net.fortuna.ical4j.model.component.{CalendarComponent, VEvent}
+import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.component.VEvent
 
 /**
   * Created by pierr on 01.09.2016.

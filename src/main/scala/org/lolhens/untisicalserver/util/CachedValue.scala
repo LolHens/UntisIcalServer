@@ -13,9 +13,10 @@ class CachedValue[E](getValue: => E, timeout: Duration) {
 
   def invalid = value match {
     case Some((_, timestamp)) =>
-      timestamp
-        .plus(timeout.toMillis, ChronoUnit.MILLIS)
-        .isAfter(LocalDateTime.now())
+      LocalDateTime.now()
+        .isAfter(
+          timestamp
+            .plus(timeout.toMillis, ChronoUnit.MILLIS))
 
     case None =>
       true

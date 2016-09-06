@@ -24,6 +24,11 @@ class ICalProvider(val schoolClass: SchoolClass) {
       calendar
     }
 
+    calendarFuture.onFailure {
+      case e: Exception =>
+        println(e)
+    }
+
     Await.result(calendarFuture, 5 minutes)
   }
 }

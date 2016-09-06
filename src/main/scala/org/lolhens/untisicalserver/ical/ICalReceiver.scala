@@ -11,10 +11,14 @@ import org.lolhens.untisicalserver.data.SchoolClass
 import org.lolhens.untisicalserver.http.client.StringReceiver
 import org.lolhens.untisicalserver.ical.ICalReceiver._
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 class ICalReceiver(val schoolClass: SchoolClass) {
   def apply(year: Int, week: Int): Future[Option[Calendar]] = {
@@ -30,14 +34,33 @@ class ICalReceiver(val schoolClass: SchoolClass) {
     val iCalUrl =
       s"https://mese.webuntis.com/WebUntis/Ical.do?school=${schoolClass.school}&elemType=1&elemId=${schoolClass.classId}&rpt_sd=$yearString-$monthString-$dayString"
 
-    def receive = StringReceiver.receive(iCalUrl)(10 seconds).map { iCalString =>
-      Some(new CalendarBuilder().build(new StringReader(iCalString)))
+    def receive = stringReceiver.receive(iCalUrl).map { iCalString =>
+      Try(parseCalendar(iCalString)) match {
+        case Success(result) =>
+          Some(result)
+
+        case Failure(exception) =>
+          exception.printStackTrace()
+          None
+      }
     }
 
-    receive
-      .fallbackTo(receive)
-      .fallbackTo(receive)
-      .fallbackTo(Future.successful(None))
+    Future {
+      (0 until 10).foldLeft[Option[Option[Calendar]]](None) {
+        case (None, _) =>
+          Try(Await.result(receive, 5 seconds)) match {
+            case Success(result) =>
+              Some(result)
+
+            case Failure(exception) =>
+              exception.printStackTrace()
+              None
+          }
+
+        case (result@Some(_), _) =>
+          result
+      }.flatten
+    }
   }
 
   def forRange(year: Int, weeks: Range): Future[List[Calendar]] = Future.sequence(weeks.map(apply(year, _)).toList).map(_.flatMap(_.toList))
@@ -53,6 +76,12 @@ class ICalReceiver(val schoolClass: SchoolClass) {
 }
 
 object ICalReceiver {
+  private val stringReceiver = new StringReceiver(10 seconds)
+
+  private def parseCalendar(string: String): Calendar = synchronized {
+    new CalendarBuilder().build(new StringReader(string))
+  }
+
   private def dateOfWeek(year: Int, week: Int): LocalDate = {
     val weekFields = WeekFields.of(Locale.getDefault())
     LocalDate.now()

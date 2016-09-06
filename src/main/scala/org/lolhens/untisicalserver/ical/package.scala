@@ -1,11 +1,15 @@
 package org.lolhens.untisicalserver
 
-import java.time.{LocalDateTime, ZoneId}
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.Date
 import java.util.function.Predicate
 
 import net.fortuna.ical4j.model.component.CalendarComponent
-import net.fortuna.ical4j.model.{Calendar, Component, ComponentList, Property}
+import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.ComponentList
+import net.fortuna.ical4j.model.Property
 
 import scala.collection.JavaConversions._
 

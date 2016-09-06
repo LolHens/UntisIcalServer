@@ -3,6 +3,7 @@ package org.lolhens.untisicalserver.data
 import org.lolhens.untisicalserver.ical.CachedICalProvider
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 /**
   * Created by pierr on 30.08.2016.
@@ -22,20 +23,6 @@ case class SchoolClass(school: String,
 }
 
 object SchoolClass {
-  val classes = Map(
-    "fs15b" ->
-      SchoolClass("nixdorf_bk_essen", "FS-15B", 183, hnbkTeachers, Map(
-        "it1" -> "Linux",
-        "it2" -> "Cisco Praxis",
-        "it3" -> "Theorie",
-        "aw1" -> "Programmieren",
-        "aw2" -> "Datenbanken"
-      )),
-
-    "fs16b" ->
-      SchoolClass("nixdorf_bk_essen", "FS-16B", 187, hnbkTeachers)
-  )
-
   val hnbkTeachers = Map(
     "feh" -> "Herr Fehlen",
     "krg" -> "Herr Krieg",
@@ -51,5 +38,19 @@ object SchoolClass {
     "wor" -> "Frau Worat",
     "tri" -> "Frau Triebert Schreyer",
     "wen" -> "Frau Went"
+  )
+
+  val classes = Map(
+    "fs15b" ->
+      SchoolClass("nixdorf_bk_essen", "FS-15B", 183, hnbkTeachers, Map(
+        "it1" -> "Linux",
+        "it2" -> "Cisco Praxis",
+        "it3" -> "Theorie",
+        "aw1" -> "Programmieren",
+        "aw2" -> "Datenbanken"
+      )),
+
+    "fs16b" ->
+      SchoolClass("nixdorf_bk_essen", "FS-16B", 187, hnbkTeachers)
   )
 }

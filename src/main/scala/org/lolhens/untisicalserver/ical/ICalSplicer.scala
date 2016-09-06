@@ -1,7 +1,9 @@
 package org.lolhens.untisicalserver.ical
 
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.property.{CalScale, ProdId, Version}
+import net.fortuna.ical4j.model.property.CalScale
+import net.fortuna.ical4j.model.property.ProdId
+import net.fortuna.ical4j.model.property.Version
 
 import scala.collection.JavaConversions._
 

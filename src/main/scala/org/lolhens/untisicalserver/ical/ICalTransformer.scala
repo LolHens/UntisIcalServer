@@ -15,7 +15,7 @@ object ICalTransformer {
       calendar.getComponents().toList
         .flatMap {
           case event: VEvent =>
-            val lesson = event.getSummary.getValue
+            val lesson = Option(event.getSummary).map(_.getValue).getOrElse("???")
             val description = event.getDescription.getValue
 
             val (classNames, teacher) = {
@@ -23,7 +23,7 @@ object ICalTransformer {
               (split.dropRight(1), split.last)
             }
 
-            event.getSummary.setValue(s"$lesson")
+            if (event.getSummary != null) event.getSummary.setValue(s"$lesson")
             event.getDescription.setValue(
               s"""$lesson${
                 schoolClass.getLessonInfo(lesson).map(e => s" $e").getOrElse("")
