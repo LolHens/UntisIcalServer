@@ -2,6 +2,7 @@ package org.lolhens.untisicalserver.ical
 
 import net.fortuna.ical4j.model._
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Summary
 import org.lolhens.untisicalserver.data.SchoolClass
 
 import scala.collection.JavaConversions._
@@ -15,7 +16,7 @@ object ICalTransformer {
       calendar.getComponents().toList
         .flatMap {
           case event: VEvent =>
-            val lesson = Option(event.getSummary).map(_.getValue).getOrElse("???")
+            val lesson = Option(event.getSummary).map(_.getValue)
             val description = event.getDescription.getValue
 
             val (classNames, teacher) = {
@@ -23,13 +24,24 @@ object ICalTransformer {
               (split.dropRight(1), split.last)
             }
 
-            if (event.getSummary != null) event.getSummary.setValue(s"$lesson")
+            lesson match {
+              case Some(lesson) =>
+                event.getSummary.setValue(s"$lesson")
+
+              case None =>
+                event.addProperty(new Summary("???"))
+            }
+
             event.getDescription.setValue(
-              s"""$lesson${
-                schoolClass.getLessonInfo(lesson).map(e => s" $e").getOrElse("")
-              }\n${
+              s"${
+                lesson.map { lesson =>
+                  s"""$lesson${
+                    schoolClass.getLessonInfo(lesson).map(e => s" $e").getOrElse("")
+                  }\n"""
+                }.getOrElse("")
+              }${
                 schoolClass.getTeacherName(teacher).getOrElse(teacher)
-              }"""
+              }"
             )
 
             if (classNames.contains(schoolClass.className) && lesson != "Förder") List(event) else Nil

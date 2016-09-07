@@ -34,12 +34,13 @@ class ICalReceiver(val schoolClass: SchoolClass) {
     val iCalUrl =
       s"https://mese.webuntis.com/WebUntis/Ical.do?school=${schoolClass.school}&elemType=1&elemId=${schoolClass.classId}&rpt_sd=$yearString-$monthString-$dayString"
 
-    def receive = stringReceiver.receive(iCalUrl).map { iCalString =>
+    def receive: Future[Option[Calendar]] = stringReceiver.receive(iCalUrl).map { iCalString =>
       Try(parseCalendar(iCalString)) match {
         case Success(result) =>
           Some(result)
 
         case Failure(exception) =>
+          // Parsing failed
           exception.printStackTrace()
           None
       }
@@ -53,6 +54,7 @@ class ICalReceiver(val schoolClass: SchoolClass) {
               Some(result)
 
             case Failure(exception) =>
+              // Connection failed
               exception.printStackTrace()
               None
           }

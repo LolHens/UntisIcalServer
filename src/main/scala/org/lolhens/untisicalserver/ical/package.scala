@@ -5,11 +5,11 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.function.Predicate
 
-import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.CalendarComponent
 
 import scala.collection.JavaConversions._
 
@@ -35,11 +35,16 @@ package object ical {
       calendar.getComponents.clear()
       calendar.getComponents.addAll(components)
     }
+  }
 
-    def removeProperty(component: CalendarComponent, name: String) =
+  implicit class RichCalendarComponent(val component: CalendarComponent) extends AnyVal {
+    def removeProperty(name: String) =
       component.getProperties().removeIf(new Predicate[Property]() {
         override def test(t: Property): Boolean = t.getName.equalsIgnoreCase(name)
       })
+
+    def addProperty(property: Property) =
+      component.getProperties.add(property)
   }
 
 }

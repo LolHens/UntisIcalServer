@@ -1,5 +1,6 @@
 package org.lolhens.untisicalserver.http.client
 
+import com.ning.http.util.ProxyUtils
 import dispatch.Http
 import dispatch.as
 import dispatch.url
@@ -16,6 +17,7 @@ import scala.language.postfixOps
   */
 class StringReceiver(timeout: Duration = defaultTimeout) {
   private val http = Http.configure(_
+    .setProxyServerSelector(ProxyUtils.getJdkDefaultProxyServerSelector)
     .setSSLContext(FakeSSL.FakeSSLContext())
     .setHostnameVerifier(FakeSSL.FakeHostnameVerifier)
     .setFollowRedirect(true)
