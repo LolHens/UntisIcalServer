@@ -17,10 +17,10 @@ object ICalTransformer {
         .flatMap {
           case event: VEvent =>
             val lesson = Option(event.getSummary).map(_.getValue)
-            val description = event.getDescription.getValue
+            val description = Option(event.getDescription.getValue)
 
             val (classNames, teacher) = {
-              val split = description.split(" ")
+              val split = description.get.split(" ")
               (split.dropRight(1), split.last)
             }
 
@@ -44,7 +44,7 @@ object ICalTransformer {
               }"
             )
 
-            if (classNames.contains(schoolClass.className) && lesson != "Förder") List(event) else Nil
+            if (classNames.contains(schoolClass.className) && !lesson.contains("Förder")) List(event) else Nil
 
           case component =>
             List(component)

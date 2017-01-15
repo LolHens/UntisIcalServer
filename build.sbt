@@ -7,31 +7,30 @@ lazy val settings = Seq(
 
   scalaVersion := "2.11.8",
 
-  resolvers += "Artifactory" at "http://lolhens.no-ip.org/artifactory/libs-release/",
+  resolvers := Seq("Artifactory" at "http://lolhens.no-ip.org/artifactory/libs-release/"),
 
   libraryDependencies ++= Seq(
-    "org.apache.commons" % "commons-lang3" % "3.4",
-    "commons-io" % "commons-io" % "2.5",
-    "com.thoughtworks.xstream" % "xstream" % "1.4.9",
-    "ch.qos.logback" % "logback-classic" % "1.1.7",
-    "org.scala-lang" % "scala-compiler" % "2.11.8",
     "org.scala-lang" % "scala-reflect" % "2.11.8",
-    "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
-    "org.scala-lang.modules" %% "scala-pickling" % "0.10.1",
-    "org.scala-lang.modules" %% "scala-xml" % "1.0.4",
-    "com.chuusai" %% "shapeless" % "2.3.1",
-    "com.typesafe.akka" %% "akka-actor" % "2.4.9",
-    "com.typesafe.akka" %% "akka-remote" % "2.4.9",
-    "com.typesafe.akka" %% "akka-stream" % "2.4.9",
-    "com.typesafe.akka" %% "akka-http-experimental" % "2.4.9",
-    "com.typesafe.akka" %% "akka-slf4j" % "2.4.9",
-    "com.typesafe.slick" %% "slick" % "3.1.1",
+    "org.slf4j" % "slf4j-api" % "1.7.21",
+    "ch.qos.logback" % "logback-classic" % "1.1.7",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
+    "org.typelevel" %% "cats" % "0.8.1",
+    "com.chuusai" %% "shapeless" % "2.3.2",
+    "com.github.mpilquist" %% "simulacrum" % "0.10.0",
+    "io.monix" %% "monix" % "2.1.0",
+    "io.monix" %% "monix-cats" % "2.1.0",
+    "com.typesafe.akka" %% "akka-actor" % "2.4.12",
+    "com.typesafe.akka" %% "akka-remote" % "2.4.12",
+    "com.typesafe.akka" %% "akka-stream" % "2.4.12",
+    "com.typesafe.akka" %% "akka-http-experimental" % "2.4.11",
     "io.spray" %% "spray-json" % "1.3.2",
     "com.github.fommil" %% "spray-json-shapeless" % "1.2.0",
-    "com.iheart" %% "ficus" % "1.2.0",
     "net.databinder.dispatch" %% "dispatch-core" % "0.11.3",
     "org.mnode.ical4j" % "ical4j" % "2.0-beta1"
   ),
+
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3"),
 
   scalacOptions ++= Seq("-Xmax-classfile-name", "254")
 )
