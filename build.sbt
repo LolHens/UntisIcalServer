@@ -3,30 +3,31 @@ name := "UntisIcalServer"
 mainClass := Some("org.lolhens.untisicalserver.Main")
 
 lazy val settings = Seq(
-  version := "1.4.0",
+  version := "1.4.1",
 
-  scalaVersion := "2.11.8",
+  scalaOrganization := "org.typelevel",
+  scalaVersion := "2.12.1",
 
   resolvers := Seq("Artifactory" at "http://lolhens.no-ip.org/artifactory/libs-release/"),
 
   libraryDependencies ++= Seq(
-    "org.scala-lang" % "scala-reflect" % "2.11.8",
-    "org.slf4j" % "slf4j-api" % "1.7.21",
-    "ch.qos.logback" % "logback-classic" % "1.1.7",
+    "org.scala-lang" % "scala-reflect" % "2.12.1",
+    "org.slf4j" % "slf4j-api" % "1.7.24",
+    "ch.qos.logback" % "logback-classic" % "1.2.1",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
-    "org.typelevel" %% "cats" % "0.8.1",
+    "org.typelevel" %% "cats" % "0.9.0",
     "com.chuusai" %% "shapeless" % "2.3.2",
     "com.github.mpilquist" %% "simulacrum" % "0.10.0",
-    "io.monix" %% "monix" % "2.1.0",
-    "io.monix" %% "monix-cats" % "2.1.0",
-    "com.typesafe.akka" %% "akka-actor" % "2.4.12",
-    "com.typesafe.akka" %% "akka-remote" % "2.4.12",
-    "com.typesafe.akka" %% "akka-stream" % "2.4.12",
-    "com.typesafe.akka" %% "akka-http-experimental" % "2.4.11",
-    "io.spray" %% "spray-json" % "1.3.2",
-    "com.github.fommil" %% "spray-json-shapeless" % "1.2.0",
-    "net.databinder.dispatch" %% "dispatch-core" % "0.11.3",
-    "org.mnode.ical4j" % "ical4j" % "2.0-beta1"
+    "io.monix" %% "monix" % "2.2.3",
+    "io.monix" %% "monix-cats" % "2.2.3",
+    "com.typesafe.akka" %% "akka-actor" % "2.4.17",
+    "com.typesafe.akka" %% "akka-remote" % "2.4.17",
+    "com.typesafe.akka" %% "akka-stream" % "2.4.17",
+    "com.typesafe.akka" %% "akka-http" % "10.0.4",
+    "io.spray" %% "spray-json" % "1.3.3",
+    "com.github.fommil" %% "spray-json-shapeless" % "1.3.0",
+    "net.databinder.dispatch" %% "dispatch-core" % "0.12.0",
+    "org.mnode.ical4j" % "ical4j" % "2.0.0"
   ),
 
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
