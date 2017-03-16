@@ -24,7 +24,7 @@ object FakeSSL {
   object FakeSSLContext {
     private lazy val _trustManagers = Array[TrustManager](new FakeX509TrustManager())
 
-    def apply() = {
+    def apply(): SSLContext = {
       val context = SSLContext.getInstance("TLS")
       context.init(null, _trustManagers, new SecureRandom())
       context

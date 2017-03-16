@@ -11,30 +11,26 @@ import org.lolhens.untisicalserver.data.SchoolClass
 import org.lolhens.untisicalserver.http.client.StringReceiver
 import org.lolhens.untisicalserver.ical.ICalReceiver._
 
-import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class ICalReceiver(val schoolClass: SchoolClass) {
   def apply(year: Int, week: Int): Future[Option[Calendar]] = {
-    val date = dateOfWeek(year, week)
+    def dateString(date: LocalDate) = {
+      def padInt(int: Int, digits: Int): String = int.toString.reverse.padTo(digits, "0").reverse.mkString
 
-    def padInt(int: Int, digits: Int): String =
-      int.toString.reverse.padTo(digits, "0").reverse.mkString
+      s"${padInt(date.getYear, 4)}-${padInt(date.getMonthValue, 2)}-${padInt(date.getDayOfMonth, 2)}"
+    }
 
-    val yearString = padInt(date.getYear, 4)
-    val monthString = padInt(date.getMonthValue, 2)
-    val dayString = padInt(date.getDayOfMonth, 2)
+    def iCalUrl(school: String, classId: String, date: LocalDate): String =
+      s"https://mese.webuntis.com/WebUntis/Ical.do?school=$school&elemType=1&elemId=$classId&rpt_sd=${dateString(date)}"
 
-    val iCalUrl =
-      s"https://mese.webuntis.com/WebUntis/Ical.do?school=${schoolClass.school}&elemType=1&elemId=${schoolClass.classId}&rpt_sd=$yearString-$monthString-$dayString"
+    val url = iCalUrl(schoolClass.school, schoolClass.classId.toString, dateOfWeek(year, week))
 
-    def receive: Future[Option[Calendar]] = stringReceiver.receive(iCalUrl).map { iCalString =>
+    def receive: Future[Option[Calendar]] = stringReceiver.receive(url).map { iCalString =>
       Try(parseCalendar(iCalString)) match {
         case Success(result) =>
           Some(result)
@@ -49,7 +45,7 @@ class ICalReceiver(val schoolClass: SchoolClass) {
     Future {
       (0 until 10).foldLeft[Option[Option[Calendar]]](None) {
         case (None, _) =>
-          Try(Await.result(receive, 5 seconds)) match {
+          Try(Await.result(receive, 20 seconds)) match {
             case Success(result) =>
               Some(result)
 
