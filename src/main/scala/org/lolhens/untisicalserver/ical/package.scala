@@ -39,9 +39,7 @@ package object ical {
 
   implicit class RichCalendarComponent(val component: CalendarComponent) extends AnyVal {
     def removeProperty(name: String) =
-      component.getProperties().removeIf(new Predicate[Property]() {
-        override def test(t: Property): Boolean = t.getName.equalsIgnoreCase(name)
-      })
+      component.getProperties().removeIf((t: Property) => t.getName.equalsIgnoreCase(name))
 
     def addProperty(property: Property) =
       component.getProperties.add(property)
