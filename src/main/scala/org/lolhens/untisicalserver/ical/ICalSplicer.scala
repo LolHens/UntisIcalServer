@@ -1,9 +1,8 @@
 package org.lolhens.untisicalserver.ical
 
+import akka.stream.scaladsl.Flow
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.property.CalScale
-import net.fortuna.ical4j.model.property.ProdId
-import net.fortuna.ical4j.model.property.Version
+import net.fortuna.ical4j.model.property.{CalScale, ProdId, Version}
 
 import scala.collection.JavaConversions._
 
@@ -11,7 +10,7 @@ import scala.collection.JavaConversions._
   * Created by pierr on 30.08.2016.
   */
 object ICalSplicer {
-  def apply(calendars: List[Calendar]): Calendar = {
+  val flow = Flow[List[Calendar]].map { calendars =>
     val calendar = new Calendar()
 
     calendar.getProperties().add(new ProdId("-//Ben Fortuna//iCal4j 1.0//EN"))

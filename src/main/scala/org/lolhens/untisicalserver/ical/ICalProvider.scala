@@ -1,6 +1,7 @@
 package org.lolhens.untisicalserver.ical
 
 import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import net.fortuna.ical4j.model.Calendar
 import org.lolhens.untisicalserver.data.SchoolClass
 
@@ -12,6 +13,7 @@ import scala.language.postfixOps
 
 class ICalProvider(val schoolClass: SchoolClass) {
   implicit val actorSystem = ActorSystem()
+  implicit val materializer = ActorMaterializer()
 
   def apply(): Calendar = {
     val currentCalendars =

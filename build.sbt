@@ -5,10 +5,13 @@ mainClass := Some("org.lolhens.untisicalserver.Main")
 lazy val settings = Seq(
   version := "1.4.1",
 
-  scalaOrganization := "org.typelevel",
-  scalaVersion := "2.12.2",
+  scalaVersion := "2.12.3",
 
-  resolvers := Seq("Artifactory" at "http://lolhens.no-ip.org/artifactory/libs-release/"),
+  externalResolvers := Seq(
+    Resolver.defaultLocal,
+    "artifactory-maven" at "http://lolhens.no-ip.org/artifactory/maven-public/",
+    Resolver.url("artifactory-ivy", url("http://lolhens.no-ip.org/artifactory/ivy-public/"))(Resolver.ivyStylePatterns)
+  ),
 
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % "2.12.2",
@@ -20,10 +23,10 @@ lazy val settings = Seq(
     "com.github.mpilquist" %% "simulacrum" % "0.10.0",
     "io.monix" %% "monix" % "2.3.0",
     "io.monix" %% "monix-cats" % "2.3.0",
-    "com.typesafe.akka" %% "akka-actor" % "2.5.1",
-    "com.typesafe.akka" %% "akka-remote" % "2.5.1",
-    "com.typesafe.akka" %% "akka-stream" % "2.5.1",
-    "com.typesafe.akka" %% "akka-http" % "10.0.6",
+    "com.typesafe.akka" %% "akka-actor" % "2.5.3",
+    "com.typesafe.akka" %% "akka-remote" % "2.5.3",
+    "com.typesafe.akka" %% "akka-stream" % "2.5.3",
+    "com.typesafe.akka" %% "akka-http" % "10.0.9",
     "io.spray" %% "spray-json" % "1.3.3",
     "com.github.fommil" %% "spray-json-shapeless" % "1.3.0",
     "net.databinder.dispatch" %% "dispatch-core" % "0.12.0",

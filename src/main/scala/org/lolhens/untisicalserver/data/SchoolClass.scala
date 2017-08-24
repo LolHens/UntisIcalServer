@@ -23,7 +23,7 @@ case class SchoolClass(school: String,
 }
 
 object SchoolClass {
-  val hnbkTeachers = Map(
+  val hnbkTeachers: Map[String, String] = Map(
     "feh" -> "Herr Fehlen",
     "krg" -> "Herr Krieg",
     "kri" -> "Frau Krigel",
@@ -40,7 +40,7 @@ object SchoolClass {
     "wen" -> "Frau Went"
   )
 
-  val classes = Map(
+  val classes: Map[String, SchoolClass] = Map(
     "fs15b" ->
       SchoolClass("nixdorf_bk_essen", "FS-15B", 183, hnbkTeachers, Map(
         "it1" -> "Linux",
