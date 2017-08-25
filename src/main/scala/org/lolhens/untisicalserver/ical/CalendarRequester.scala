@@ -3,13 +3,13 @@ package org.lolhens.untisicalserver.ical
 import java.io.StringReader
 import java.time.LocalDate
 
+import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import monix.execution.FutureUtils.extensions._
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Calendar
 import org.lolhens.untisicalserver.data.SchoolClass
 import org.lolhens.untisicalserver.http.client.StringReceiver
-import org.lolhens.untisicalserver.ical.CalendarRequester._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -34,16 +34,23 @@ object CalendarRequester {
     new CalendarBuilder().build(new StringReader(string))
   }
 
-  val flow = Flow[(SchoolClass, WeekOfYear)].map {
-    case (schoolClass, week) =>
-      iCalUrl(schoolClass.school, schoolClass.classId.toString, week.localDate)
-  }.mapAsync(8) { url =>
-    stringReceiver.receive(url).materialize
-  }.map {
-    case Success(icalString: String) =>
-      Try(parseCalendar(icalString))
+  val flow: Flow[(SchoolClass, WeekOfYear), (SchoolClass, Try[Calendar]), NotUsed] =
+    Flow[(SchoolClass, WeekOfYear)]
+      .map {
+        case (schoolClass, week) =>
+          (schoolClass, iCalUrl(schoolClass.school, schoolClass.classId.toString, week.localDate))
+      }
+      .mapAsync(8) {
+        case (schoolClass, url) =>
+          stringReceiver.receive(url).materialize
+            .map { icalStringTry =>
+              (schoolClass, icalStringTry)
+            }
+      }.map {
+      case (schoolClass, Success(icalString: String)) =>
+        (schoolClass, Try(parseCalendar(icalString)))
 
-    case Failure(e) =>
-      Failure(e)
-  }
+      case (schoolClass, Failure(e)) =>
+        (schoolClass, Failure(e))
+    }
 }

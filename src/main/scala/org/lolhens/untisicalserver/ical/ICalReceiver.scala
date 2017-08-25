@@ -1,30 +1,43 @@
 package org.lolhens.untisicalserver.ical
 
-import akka.actor.{ActorRef, ActorRefFactory}
-import akka.pattern.ask
+import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Source}
-import akka.util.Timeout
 import net.fortuna.ical4j.model.Calendar
 import org.lolhens.untisicalserver.data.SchoolClass
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
-import scala.util.{Failure, Success, Try}
 
 object ICalReceiver {
-  def forWeek = Flow[(SchoolClass, WeekOfYear)]
-    .via(CalendarRequester.flow)
-      .map(e => Some(e.get))
-      .recoverWithRetries(5, {
-        case e => Source.single(None)
-      })
+  lazy val forWeek: Flow[(SchoolClass, WeekOfYear), (SchoolClass, WeekOfYear, Option[Calendar]), NotUsed] =
+    Flow[(SchoolClass, WeekOfYear)]
+      .flatMapConcat {
+        case (schoolClass, week) =>
+          Source.single((schoolClass, week))
+            .via(CalendarRequester.flow)
+            .map(e => (schoolClass, week, Some(e._2.get)))
+            .recoverWithRetries(5, {
+              case _ => Source.single((schoolClass, week, None))
+            })
+      }
 
-  def forWeekRange = Flow[(SchoolClass, WeekRange)]
 
-  def forRange(weeks: WeekRange): Future[List[Calendar]] = Future.sequence(weeks.toList.map(apply)).map(_.flatMap(_.toList))
+  lazy val forWeekRange: Flow[(SchoolClass, WeekRange), (SchoolClass, List[(WeekOfYear, Calendar)]), NotUsed] =
+    Flow[(SchoolClass, WeekRange)]
+      .flatMapConcat {
+        case (schoolClass, weeks) =>
+          Source.repeat(schoolClass)
+            .zip(Source(weeks.toList))
+            .via(forWeek)
+            .fold(List.empty[(WeekOfYear, Calendar)]) { (last, calendarOption) =>
+              last ++ calendarOption._3.map(e => (calendarOption._2, e)).toList
+            }
+            .map(e => (schoolClass, e))
+      }
 
-  def currentCalendars(back: Int = 2, forward: Int = -1): Future[List[Calendar]] =
-    forRange(WeekRange(WeekOfYear.now - back, WeekOfYear.now + forward))
+  def currentCalendars(back: Int = 20, forward: Int = 10): Flow[SchoolClass, (SchoolClass, List[(WeekOfYear, Calendar)]), NotUsed] =
+    Flow[SchoolClass]
+      .zip(
+        Source.repeat(WeekRange(WeekOfYear.now - back, WeekOfYear.now + forward))
+      )
+      .via(forWeekRange)
 }

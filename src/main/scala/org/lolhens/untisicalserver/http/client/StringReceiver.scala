@@ -1,9 +1,7 @@
 package org.lolhens.untisicalserver.http.client
 
 import com.ning.http.util.ProxyUtils
-import dispatch.Http
-import dispatch.as
-import dispatch.url
+import dispatch.{Http, as, url}
 import org.lolhens.untisicalserver.http.FakeSSL
 import org.lolhens.untisicalserver.http.client.StringReceiver._
 

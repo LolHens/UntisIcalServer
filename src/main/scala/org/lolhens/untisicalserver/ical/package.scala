@@ -3,8 +3,8 @@ package org.lolhens.untisicalserver
 import java.time.{LocalDateTime, ZoneId}
 import java.util.Date
 
-import net.fortuna.ical4j.model.{Calendar, Component, ComponentList, Property}
 import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.{Calendar, Component, ComponentList, Property}
 
 import scala.collection.JavaConverters._
 

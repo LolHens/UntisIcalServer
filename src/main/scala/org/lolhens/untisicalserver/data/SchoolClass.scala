@@ -1,6 +1,6 @@
 package org.lolhens.untisicalserver.data
 
-import org.lolhens.untisicalserver.ical.CachedICalProvider
+import org.lolhens.untisicalserver.ical.ICalProvider
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -19,7 +19,7 @@ case class SchoolClass(school: String,
   def getLessonInfo(lesson: String): Option[String] =
     lessonInfo.get(lesson.toLowerCase)
 
-  lazy val iCalProvider = new CachedICalProvider(this, 5 minutes)
+  lazy val iCalProvider = new ICalProvider(this, 2.minutes)
 }
 
 object SchoolClass {
