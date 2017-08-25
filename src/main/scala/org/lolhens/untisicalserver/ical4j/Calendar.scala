@@ -6,3 +6,7 @@ package org.lolhens.untisicalserver.ical4j
 case class Calendar(properties: List[Property], components: List[Component]) {
 
 }
+
+object Calendar {
+  val empty: Calendar = Calendar(Nil, Nil)
+}
