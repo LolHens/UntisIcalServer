@@ -38,7 +38,7 @@ object CalendarRequester {
     Flow[(SchoolClass, WeekOfYear)]
       .map {
         case (schoolClass, week) =>
-          (schoolClass, iCalUrl(schoolClass.school, schoolClass.classId.toString, week.localDate))
+          (schoolClass, iCalUrl(schoolClass.school, schoolClass.classId.toString, week.localDateMin))
       }
       .mapAsync(8) {
         case (schoolClass, url) =>

@@ -3,7 +3,7 @@ name := "UntisIcalServer"
 mainClass := Some("org.lolhens.untisicalserver.Main")
 
 lazy val settings = Seq(
-  version := "1.5.1",
+  version := "1.6.0",
 
   scalaVersion := "2.12.3",
 
@@ -30,8 +30,11 @@ lazy val settings = Seq(
     "io.spray" %% "spray-json" % "1.3.3",
     "com.github.fommil" %% "spray-json-shapeless" % "1.4.0",
     "net.databinder.dispatch" %% "dispatch-core" % "0.12.3",
-    "org.mnode.ical4j" % "ical4j" % "2.0.4"
-  ),
+    "org.mnode.ical4j" % "ical4j" % "2.0.4",
+    "com.google.api-client" % "google-api-client" % "1.22.0",
+    "com.google.oauth-client" % "google-oauth-client-jetty" % "1.22.0",
+    "com.google.apis" % "google-api-services-calendar" % "v3-rev254-1.22.0"
+),
 
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4"),

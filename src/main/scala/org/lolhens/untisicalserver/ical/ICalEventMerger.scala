@@ -3,6 +3,7 @@ package org.lolhens.untisicalserver.ical
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import net.fortuna.ical4j.model.component.{CalendarComponent, VEvent}
+import org.lolhens.untisicalserver.util.Utils._
 
 /**
   * Created by pierr on 01.09.2016.

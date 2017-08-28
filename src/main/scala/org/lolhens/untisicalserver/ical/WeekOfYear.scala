@@ -10,13 +10,15 @@ import org.lolhens.untisicalserver.ical.WeekOfYear._
   * Created by pierr on 24.03.2017.
   */
 case class WeekOfYear(year: Int, week: Int) {
-  lazy val localDate: LocalDate = LocalDate.now()
+  lazy val localDateMin: LocalDate = LocalDate.now()
     .withYear(year)
     .`with`(weekFields.weekOfYear(), 1)
     .`with`(weekFields.dayOfWeek(), 1)
     .plusWeeks(week - 1)
 
-  def +(weeks: Int): WeekOfYear = WeekOfYear(localDate.plusWeeks(weeks))
+  lazy val localDateMax: LocalDate = localDateMin.plusWeeks(1)
+
+  def +(weeks: Int): WeekOfYear = WeekOfYear(localDateMin.plusWeeks(weeks))
 
   def -(weeks: Int): WeekOfYear = this + -weeks
 }

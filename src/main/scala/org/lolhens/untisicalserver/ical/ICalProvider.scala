@@ -6,6 +6,7 @@ import akka.stream.{ActorMaterializer, ThrottleMode}
 import monix.execution.atomic.Atomic
 import net.fortuna.ical4j.model.Calendar
 import org.lolhens.untisicalserver.data.SchoolClass
+import org.lolhens.untisicalserver.util.Utils._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -54,4 +55,6 @@ class ICalProvider(val schoolClass: SchoolClass, interval: FiniteDuration) {
     .run()
 
   def apply(): Calendar = currentCalendar.get
+
+  def all: Map[WeekOfYear, Calendar] = calendarCache.get
 }

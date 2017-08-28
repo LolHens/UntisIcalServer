@@ -6,7 +6,7 @@ import net.fortuna.ical4j.model._
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Summary
 import org.lolhens.untisicalserver.data.SchoolClass
-
+import org.lolhens.untisicalserver.util.Utils._
 import scala.collection.JavaConverters._
 
 /**

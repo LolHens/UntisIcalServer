@@ -3,7 +3,7 @@ package org.lolhens.untisicalserver.ical
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.property.{CalScale, ProdId, Version}
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
   * Created by pierr on 30.08.2016.
@@ -12,7 +12,7 @@ object ICalSplicer {
   def splice(calendars: List[Calendar]): Calendar = {
     val calendar = emptyCalendar()
 
-    calendar.getComponents().addAll(calendars.flatMap(_.getComponents()))
+    calendar.getComponents().addAll(calendars.flatMap(_.getComponents().asScala).asJava)
 
     calendar
   }

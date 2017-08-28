@@ -1,18 +1,21 @@
-package org.lolhens.untisicalserver
+package org.lolhens.untisicalserver.util
 
 import java.time.{LocalDateTime, ZoneId}
 import java.util.Date
 
-import net.fortuna.ical4j.model.component.CalendarComponent
+import ch.qos.logback.classic.{Level, Logger}
+import net.fortuna.ical4j.model.component.{CalendarComponent, VEvent}
 import net.fortuna.ical4j.model.{Calendar, Component, ComponentList, Property}
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
+object Utils {
+  lazy val setLogLevel: Unit = {
+    val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
+    logger.setLevel(Level.INFO)
+  }
 
-/**
-  * Created by pierr on 01.09.2016.
-  */
-package object ical {
   def ComponentList[E <: Component](components: List[E]): ComponentList[E] = {
     val componentList = new ComponentList[E]()
     componentList.addAll(components.asJava)
@@ -29,6 +32,10 @@ package object ical {
     def setComponents(components: List[CalendarComponent]): Unit = {
       calendar.getComponents.clear()
       calendar.getComponents.addAll(components.asJava)
+    }
+
+    def events: List[VEvent] = calendar.getComponents().asScala.toList.collect {
+      case event: VEvent => event
     }
   }
 

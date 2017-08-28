@@ -42,7 +42,7 @@ object SchoolClass {
 
   val classes: Map[String, SchoolClass] = Map(
     "fs15b" ->
-      SchoolClass("nixdorf_bk_essen", "FS-15B", 183, hnbkTeachers, Map(
+      SchoolClass("nixdorf_bk_essen", "FS-15B", /*183*/ 301, hnbkTeachers, Map(
         "it1" -> "Linux",
         "it2" -> "Cisco Praxis",
         "it3" -> "Theorie",
@@ -51,6 +51,6 @@ object SchoolClass {
       )),
 
     "fs16b" ->
-      SchoolClass("nixdorf_bk_essen", "FS-16B", 187, hnbkTeachers)
+      SchoolClass("nixdorf_bk_essen", "FS-16B", /*187*/ 305, hnbkTeachers)
   )
 }
