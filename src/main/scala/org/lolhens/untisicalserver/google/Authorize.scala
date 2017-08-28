@@ -1,6 +1,6 @@
 package org.lolhens.untisicalserver.google
 
-import java.io.{File, InputStreamReader}
+import java.io.{File, FileInputStream, InputStreamReader}
 
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
@@ -25,7 +25,7 @@ object Authorize {
   val jsonFactory: JacksonFactory = JacksonFactory.getDefaultInstance
 
   private def loadClientSecrets(): Try[GoogleClientSecrets] = Try {
-    val in = getClass.getResourceAsStream("/client_secret.json")
+    val in = new FileInputStream(dataStoreDir.toPath.resolve("client_secret.json").toFile)
     GoogleClientSecrets.load(jsonFactory, new InputStreamReader(in))
   }
 
