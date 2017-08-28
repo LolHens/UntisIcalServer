@@ -31,6 +31,7 @@ lazy val settings = Seq(
     "com.github.fommil" %% "spray-json-shapeless" % "1.4.0",
     "net.databinder.dispatch" %% "dispatch-core" % "0.12.3",
     "org.mnode.ical4j" % "ical4j" % "2.0.4",
+    "com.github.pureconfig" %% "pureconfig" % "0.8.0",
     "com.google.api-client" % "google-api-client" % "1.22.0",
     "com.google.oauth-client" % "google-oauth-client-jetty" % "1.22.0",
     "com.google.apis" % "google-api-services-calendar" % "v3-rev254-1.22.0"

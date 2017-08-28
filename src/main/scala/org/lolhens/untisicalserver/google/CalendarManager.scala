@@ -47,6 +47,8 @@ case class CalendarManager(calendarService: CalendarService) {
                  week: WeekOfYear): Task[List[Event]] =
     listEvents(calendar, week.localDateMin, week.localDateMax)
 
+  def test(week: WeekOfYear) = ((week.localDateMin: LocalDateTime): DateTime, (week.localDateMax: LocalDateTime): DateTime)
+
   private def openBatch(batch: BatchRequest): BatchRequest = Option(batch).getOrElse(calendarService.batch())
 
   private def closeBatch(openedBatch: BatchRequest, batch: BatchRequest): Task[Unit] = {
@@ -89,7 +91,7 @@ case class CalendarManager(calendarService: CalendarService) {
     for {
       oldEvents <- listEvents(calendar, week)
       _ <- removeEvents(calendar, oldEvents, openedBatch)
-      _ <- addEvents(calendar, events, openedBatch)
+      _ <- addEvents(calendar, filter(events, week), openedBatch)
       _ <- closeBatch(openedBatch, batch)
     } yield ()
   }
@@ -115,10 +117,11 @@ object CalendarManager {
 
   private def zoneOffset: ZoneOffset = OffsetDateTime.now().getOffset
 
-  implicit def dateTimeFromLocalDateTime(localDateTime: LocalDateTime): DateTime = {
-    val offset = zoneOffset
-    new DateTime(Date.from(localDateTime.toInstant(offset)), TimeZone.getTimeZone(offset))
-  }
+  implicit def dateTimeFromLocalDateTime(localDateTime: LocalDateTime): DateTime =
+    if (localDateTime == null) null else {
+      val offset = zoneOffset
+      new DateTime(Date.from(localDateTime.toInstant(offset)), TimeZone.getTimeZone(offset))
+    }
 
   implicit def localDateTimeFromLocalDate(localDate: LocalDate): LocalDateTime =
     LocalDateTime.of(localDate, LocalTime.MIDNIGHT)

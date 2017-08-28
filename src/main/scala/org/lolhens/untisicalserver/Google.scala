@@ -5,6 +5,7 @@ import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.lolhens.untisicalserver.data.SchoolClass
 import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
+import org.lolhens.untisicalserver.ical.WeekOfYear
 import org.lolhens.untisicalserver.util.Utils
 import org.lolhens.untisicalserver.util.Utils._
 
@@ -16,14 +17,23 @@ object Google {
   lazy val calendarManager = CalendarManager(Authorize.getCalendarService("UntisIcalServer", readonly = false).get)
 
   def updateCalendar(): Unit = {
-    Utils.setLogLevel
+    //Utils.setLogLevel
 
     val calendar = Await.result(calendarManager.listCalendars().runAsync, Duration.Inf)
       .find(e => CalendarManager.calendarName(e) == "FS-15B Stundenplan").get
 
     val schoolClass = SchoolClass.classes("fs15b")
 
-    while (true) {
+    println(calendar)
+    println((WeekOfYear.now + 1).localDateMin)
+    println((WeekOfYear.now + 1).localDateMax)
+    println(calendarManager.test(WeekOfYear.now))
+    val t = for (e <- calendarManager.listEvents(calendar, WeekOfYear.now);
+    _ = println(e)) yield e
+
+    Await.result(t.runAsync, Duration.Inf)
+
+    /*while (true) {
       Try {
         val calendars = schoolClass.iCalProvider.all
 
@@ -38,6 +48,6 @@ object Google {
       }.failed.foreach(_.printStackTrace())
 
       Try(Thread.sleep(2.minutes.toMillis))
-    }
+    }*/
   }
 }

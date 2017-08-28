@@ -15,7 +15,7 @@ object Main {
   def main(args: Array[String]): Unit = {
     Utils.setLogLevel
 
-    iCalServer.start()
+    //iCalServer.start()
 
     Google.updateCalendar()
   }
