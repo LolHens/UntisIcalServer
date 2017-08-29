@@ -1,10 +1,10 @@
 package org.lolhens.untisicalserver
 
 import com.google.api.services.calendar.{Calendar => CalendarService}
-import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.lolhens.untisicalserver.data.config.Config
 import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
+import org.lolhens.untisicalserver.util.Utils
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -38,14 +38,15 @@ object Google {
       Try {
         val calendars = schoolClass.iCalProvider.all
 
-        Await.result(Task.sequence(
+        Await.result(Utils.parallel(
           for {
             (week, cal) <- calendars.toList
             events = cal.events.map(_.toGEvent)
           } yield {
             println(s"week $week ${week.localDateMin}: ${events.size} events")
             calendarManager.updateWeek(calendar, week, events)
-          }
+          },
+          unordered = true
         ).runAsync, 5.minutes)
       }.failed.foreach(_.printStackTrace())
 

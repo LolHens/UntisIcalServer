@@ -118,19 +118,10 @@ case class CalendarManager(calendarService: CalendarService) {
 }
 
 object CalendarManager {
-  private lazy val parallelism = Runtime.getRuntime.availableProcessors() + 2
-
   private def emptyCallback[T] = new JsonBatchCallback[T] {
-    override def onFailure(e: GoogleJsonError, responseHeaders: HttpHeaders): Unit = ()
+    override def onFailure(e: GoogleJsonError, responseHeaders: HttpHeaders): Unit = println(e)
     override def onSuccess(t: T, responseHeaders: HttpHeaders): Unit = ()
   }
-
-  private def parallel[T](tasks: List[Task[T]], unordered: Boolean = false): Task[List[T]] = Task.sequence {
-    tasks.sliding(parallelism, parallelism).map(e =>
-      if (unordered) Task.gatherUnordered(e)
-      else Task.gather(e)
-    )
-  }.map(_.toList.flatten)
 
   def calendarName(calendar: CalendarListEntry): String =
     Option(calendar.getSummaryOverride).getOrElse(calendar.getSummary)

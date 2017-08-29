@@ -32,8 +32,7 @@ class ICalProvider(val schoolClass: SchoolClass, interval: FiniteDuration) {
           .map(_.events)
           .via(ICalEventMerger.flow)
           .map { newEvents =>
-            calendar.copy(events = newEvents)
-            (week, calendar)
+            (week, calendar.copy(events = newEvents))
           }
     }
     .groupedWithin(Int.MaxValue, 10.seconds)

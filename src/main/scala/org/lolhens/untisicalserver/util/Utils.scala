@@ -4,6 +4,7 @@ import java.time._
 import java.util.Date
 
 import ch.qos.logback.classic.{Level, Logger}
+import monix.eval.Task
 import net.fortuna.ical4j.model.component.{CalendarComponent, VEvent}
 import net.fortuna.ical4j.model.{Calendar, Component, ComponentList, Property}
 import org.slf4j.LoggerFactory
@@ -57,4 +58,12 @@ object Utils {
       component.getProperties.add(property)
   }
 
+  private lazy val parallelism = Runtime.getRuntime.availableProcessors() + 2
+
+  def parallel[T](tasks: List[Task[T]], unordered: Boolean = false): Task[List[T]] = Task.sequence {
+    tasks.sliding(parallelism, parallelism).map(e =>
+      if (unordered) Task.gatherUnordered(e)
+      else Task.gather(e)
+    )
+  }.map(_.toList.flatten)
 }
