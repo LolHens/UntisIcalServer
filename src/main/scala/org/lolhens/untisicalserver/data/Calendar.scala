@@ -23,6 +23,8 @@ case class Calendar(events: List[Event]) {
     calendar
   }
 
+  def icalString: String = toICalCalendar.toString
+
   def ++(calendar: Calendar): Calendar = Calendar(events ++ calendar.events)
 }
 

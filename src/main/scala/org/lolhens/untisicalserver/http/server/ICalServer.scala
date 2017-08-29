@@ -45,7 +45,7 @@ class ICalServer(config: Config) {
         connection.handleWith(Flow[HttpRequest].collect {
           case r@HttpRequest(GET, Uri.Path(ClassId(schoolRef, classRef)), _, _, _) if config.getSchoolClass(schoolRef, classRef).nonEmpty =>
             val schoolClass = config.getSchoolClass(schoolRef, classRef).get
-            val response = schoolClass.iCalProvider().toString.getBytes(StandardCharsets.UTF_8)
+            val response = schoolClass.iCalProvider().icalString.getBytes(StandardCharsets.UTF_8)
 
             r.discardEntityBytes()
             HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, response))
