@@ -109,6 +109,7 @@ case class CalendarManager(calendarService: CalendarService) {
     val openedBatch = openBatch(batch)
     for {
       oldEvents <- listEvents(calendar, week)
+      _ = println(s"removing ${oldEvents.size} events; adding ${events.size}")
       _ <- removeEvents(calendar, oldEvents, openedBatch)
       _ <- addEvents(calendar, filter(events, week), openedBatch)
       _ <- closeBatch(openedBatch, batch)
