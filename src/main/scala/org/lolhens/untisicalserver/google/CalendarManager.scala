@@ -86,7 +86,7 @@ case class CalendarManager(calendarService: CalendarService) {
 
   def removeEvents(calendar: CalendarListEntry, events: List[GEvent], batch: BatchRequest = null): Task[Unit] = {
     val openedBatch = openBatch(batch)
-    Task.sequence(events.map(removeEvent(calendar, _, openedBatch)))
+    Task.gather(events.map(removeEvent(calendar, _, openedBatch)))
     closeBatch(openedBatch, batch)
   }
 
@@ -101,7 +101,7 @@ case class CalendarManager(calendarService: CalendarService) {
 
   def addEvents(calendar: CalendarListEntry, events: List[GEvent], batch: BatchRequest = null): Task[Unit] = {
     val openedBatch = openBatch(batch)
-    Task.sequence(events.map(addEvent(calendar, _, openedBatch)))
+    Task.gather(events.map(addEvent(calendar, _, openedBatch)))
     closeBatch(openedBatch, batch)
   }
 
@@ -109,10 +109,11 @@ case class CalendarManager(calendarService: CalendarService) {
     val openedBatch = openBatch(batch)
     for {
       oldEvents <- listEvents(calendar, week)
-      _ = println(s"removing ${oldEvents.size} events; adding ${events.size}")
       _ <- removeEvents(calendar, oldEvents, openedBatch)
       _ <- addEvents(calendar, filter(events, week), openedBatch)
       _ <- closeBatch(openedBatch, batch)
+      newEvents <- listEvents(calendar, week)
+      _ = println(s"week $week ${week.localDateMin}: removed ${oldEvents.size} events; adding ${events.size}; added ${newEvents.size} events")
     } yield ()
   }
 }

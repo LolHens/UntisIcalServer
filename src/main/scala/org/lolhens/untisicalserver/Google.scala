@@ -43,7 +43,7 @@ object Google {
             (week, cal) <- calendars.toList
             events = cal.events.map(_.toGEvent)
           } yield {
-            println(s"week $week ${week.localDateMin}: ${events.size} events")
+            //println(s"week $week ${week.localDateMin}: ${events.size} events")
             calendarManager.updateWeek(calendar, week, events)
           },
           unordered = true

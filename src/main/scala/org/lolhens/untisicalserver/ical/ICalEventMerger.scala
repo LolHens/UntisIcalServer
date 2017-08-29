@@ -14,32 +14,6 @@ object ICalEventMerger {
       .map { events =>
         val sorted = events.sortBy(_.end)
 
-        /*val grouped = sorted.foldLeft[List[List[Event]]](Nil) { (last, event) =>
-          val startDate = event.start
-
-          val lastEvent: Option[Event] = last.lastOption.flatMap(_.lastOption)
-          val lastEndDate = lastEvent.map(_.end)
-
-          lastEvent.map { lastEvent =>
-            val lastEndDate = lastEvent.end
-            (lastEvent, lastEndDate)
-          } match {
-            case Some((lastEvent, lastEndDate))
-              if lastEndDate == startDate
-                && lastEvent.summary == event.summary
-                && lastEvent.location == event.location
-                && lastEvent.description == event.description =>
-              last.dropRight(1) :+ (last.last :+ event)
-
-            case _ =>
-              last :+ List(event)
-          }
-        }
-
-        val merged: List[Event] = grouped.flatMap { events =>
-          events.headOption.map(_.copy(end = events.last.end)).toList
-        }*/
-
         def merge(before: Event, after: Event): Option[Event] = {
           if (before.end == after.start &&
             before.summary == after.summary &&
@@ -49,9 +23,6 @@ object ICalEventMerger {
           else
             None
         }
-
-        if (sorted.exists(_.start.toString.startsWith("2017-08-30")))
-          println(sorted.map(e => s"${e.summary} ${e.start} ${e.end}"))
 
         val merged = sorted.foldLeft(List.empty[Event]) { (lastEvents, event) =>
           lastEvents.lastOption.flatMap { lastEvent =>
