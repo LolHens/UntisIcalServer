@@ -3,7 +3,7 @@ name := "UntisIcalServer"
 mainClass := Some("org.lolhens.untisicalserver.Main")
 
 lazy val settings = Seq(
-  version := "1.7.1",
+  version := "1.7.2",
 
   scalaVersion := "2.12.3",
 
@@ -51,6 +51,7 @@ def packageConfFolder(confName: String) = Seq(
 lazy val root = Project("untisicalserver", file("."))
   .enablePlugins(
     JavaAppPackaging,
-    UniversalPlugin)
+    UniversalPlugin,
+    SbtClasspathJarPlugin)
   .settings(settings: _*)
   .settings(packageConfFolder("application.conf"): _*)

@@ -11,8 +11,8 @@ case class Config(schools: List[School]) {
 }
 
 object Config {
-  private def config = ConfigFactory.load()
-    .withFallback(ConfigFactory.parseFile(new File("../conf/application.conf")))
+  private def config = ConfigFactory.parseFile(new File("../conf/application.conf"))
+    .withFallback(ConfigFactory.load())
 
   lazy val load: Config = loadConfig[Config](config, "icalserver") match {
     case Right(config) => config
