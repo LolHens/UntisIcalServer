@@ -14,5 +14,8 @@ object Config {
   private def config = ConfigFactory.load()
     .withFallback(ConfigFactory.parseFile(new File("../conf/application.conf")))
 
-  lazy val load: Config = loadConfig[Config](config, "icalserver").right.get
+  lazy val load: Config = loadConfig[Config](config, "icalserver") match {
+    case Right(config) => config
+    case Left(f) => throw new RuntimeException("\n" + f.toList.mkString("\n"))
+  }
 }
