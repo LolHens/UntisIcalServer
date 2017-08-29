@@ -8,14 +8,14 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri, _}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import org.lolhens.untisicalserver.data.SchoolClass
+import org.lolhens.untisicalserver.data.config.Config
 
 import scala.concurrent.Future
 
 /**
   * Created by pierr on 31.08.2016.
   */
-class ICalServer() {
+class ICalServer(config: Config) {
   def start() = {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
@@ -25,29 +25,33 @@ class ICalServer() {
       Http().bind(interface = "0.0.0.0", port = 8080)
 
     object ClassId {
-      def unapply(string: String): Option[(String)] = {
+      def unapply(string: String): Option[(String, String)] = {
         val prefix = "/ical/"
         val postfix = ".ics"
 
         if (string.startsWith(prefix)
-          && string.endsWith(postfix))
-          Some(string.drop(prefix.length).dropRight(postfix.length))
-        else
+          && string.endsWith(postfix)) {
+          val schoolRef :: classRef :: _ = string.drop(prefix.length).dropRight(postfix.length).split("/", -1).toList :+ ""
+          Some((schoolRef, classRef))
+        } else
           None
       }
     }
 
+    val unknown = HttpResponse(404, entity = "Unknown resource!")
+
     val bindingFuture: Future[Http.ServerBinding] =
       serverSource.to(Sink.foreach { connection =>
         connection.handleWith(Flow[HttpRequest].collect {
-          case HttpRequest(GET, Uri.Path(ClassId(classId)), _, _, _) if SchoolClass.classes.contains(classId) =>
-            val schoolClass = SchoolClass.classes(classId)
+          case r@HttpRequest(GET, Uri.Path(ClassId(schoolRef, classRef)), _, _, _) if config.getSchoolClass(schoolRef, classRef).nonEmpty =>
+            val schoolClass = config.getSchoolClass(schoolRef, classRef).get
             val response = schoolClass.iCalProvider().toString.getBytes(StandardCharsets.UTF_8)
 
+            r.discardEntityBytes()
             HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, response))
           case r: HttpRequest =>
             r.discardEntityBytes() // important to drain incoming HTTP Entity stream
-            HttpResponse(404, entity = "Unknown resource!")
+            unknown
         })
       }).run()
   }

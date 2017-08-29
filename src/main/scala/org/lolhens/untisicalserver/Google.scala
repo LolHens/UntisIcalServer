@@ -3,11 +3,8 @@ package org.lolhens.untisicalserver
 import com.google.api.services.calendar.{Calendar => CalendarService}
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
-import org.lolhens.untisicalserver.data.SchoolClass
+import org.lolhens.untisicalserver.data.config.Config
 import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
-import org.lolhens.untisicalserver.ical.WeekOfYear
-import org.lolhens.untisicalserver.util.Utils
-import org.lolhens.untisicalserver.util.Utils._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -16,38 +13,43 @@ import scala.util.Try
 object Google {
   lazy val calendarManager = CalendarManager(Authorize.getCalendarService("UntisIcalServer", readonly = false).get)
 
+  val interval: FiniteDuration = 20.seconds // 2.minutes
+
   def updateCalendar(): Unit = {
     //Utils.setLogLevel
 
     val calendar = Await.result(calendarManager.listCalendars().runAsync, Duration.Inf)
       .find(e => CalendarManager.calendarName(e) == "FS-15B Stundenplan").get
 
-    val schoolClass = SchoolClass.classes("fs15b")
+    val schoolClass = Config.load.schools.flatMap(_.classes).find(_.ref == "fs15b").get
 
-    println(calendar)
+    /*println(calendar)
     println((WeekOfYear.now + 1).localDateMin)
     println((WeekOfYear.now + 1).localDateMax)
-    println(calendarManager.test(WeekOfYear.now))
+    //println(calendarManager.test(WeekOfYear.now))
     val t = for (e <- calendarManager.listEvents(calendar, WeekOfYear.now);
+    //_ <- calendarManager.clear(calendar);
+    //_ <- calendarManager.removeEvents(calendar, e);
     _ = println(e)) yield e
 
-    Await.result(t.runAsync, Duration.Inf)
+    Await.result(t.runAsync, Duration.Inf)*/
 
-    /*while (true) {
+    while (true) {
       Try {
         val calendars = schoolClass.iCalProvider.all
 
         Await.result(Task.sequence(
           for {
             (week, cal) <- calendars.toList
-            events = CalendarManager.toEvents(cal.events)
+            events = cal.events.map(_.toGEvent)
           } yield {
+            println(s"week $week ${week.localDateMin}: ${events.size} events")
             calendarManager.updateWeek(calendar, week, events)
           }
         ).runAsync, 5.minutes)
       }.failed.foreach(_.printStackTrace())
 
-      Try(Thread.sleep(2.minutes.toMillis))
-    }*/
+      Try(Thread.sleep(interval.toMillis))
+    }
   }
 }

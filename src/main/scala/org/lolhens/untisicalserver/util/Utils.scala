@@ -1,6 +1,6 @@
 package org.lolhens.untisicalserver.util
 
-import java.time.{LocalDateTime, ZoneId}
+import java.time._
 import java.util.Date
 
 import ch.qos.logback.classic.{Level, Logger}
@@ -24,8 +24,18 @@ object Utils {
 
   implicit val localDateTimeOrdering: Ordering[LocalDateTime] = Ordering.fromLessThan(_ isBefore _)
 
+  private[util] def zoneOffset: ZoneOffset = OffsetDateTime.now().getOffset
+
   implicit class RichDate(val date: Date) extends AnyVal {
     def toLocalDateTime: LocalDateTime = LocalDateTime.ofInstant(date.toInstant, ZoneId.systemDefault)
+  }
+
+  implicit class RichLocalDateTime(val localDateTime: LocalDateTime) extends AnyVal {
+    def toDate: Date = Date.from(localDateTime.toInstant(zoneOffset))
+  }
+
+  implicit class RichLocalDate(val localDate: LocalDate) extends AnyVal {
+    def midnight: LocalDateTime = LocalDateTime.of(localDate, LocalTime.MIDNIGHT)
   }
 
   implicit class RichCalendar(val calendar: Calendar) extends AnyVal {

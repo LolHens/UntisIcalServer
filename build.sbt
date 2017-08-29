@@ -3,7 +3,7 @@ name := "UntisIcalServer"
 mainClass := Some("org.lolhens.untisicalserver.Main")
 
 lazy val settings = Seq(
-  version := "1.6.2",
+  version := "1.7.0",
 
   scalaVersion := "2.12.3",
 
@@ -35,7 +35,7 @@ lazy val settings = Seq(
     "com.google.api-client" % "google-api-client" % "1.22.0",
     "com.google.oauth-client" % "google-oauth-client-jetty" % "1.22.0",
     "com.google.apis" % "google-api-services-calendar" % "v3-rev254-1.22.0"
-),
+  ),
 
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4"),
@@ -43,8 +43,14 @@ lazy val settings = Seq(
   scalacOptions ++= Seq("-Xmax-classfile-name", "127")
 )
 
+def packageConfFolder(confName: String) = Seq(
+  mappings in(Compile, packageBin) := (mappings in(Compile, packageBin)).value.filterNot(_._2 == confName),
+  mappings in Universal += ((resourceDirectory in Compile).value / confName -> s"conf/$confName")
+)
+
 lazy val root = Project("untisicalserver", file("."))
   .enablePlugins(
     JavaAppPackaging,
     UniversalPlugin)
   .settings(settings: _*)
+  .settings(packageConfFolder("application.conf"): _*)

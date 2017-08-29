@@ -2,8 +2,8 @@ package org.lolhens.untisicalserver.ical
 
 import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Source}
-import net.fortuna.ical4j.model.Calendar
-import org.lolhens.untisicalserver.data.SchoolClass
+import org.lolhens.untisicalserver.data.Calendar
+import org.lolhens.untisicalserver.data.config.SchoolClass
 
 import scala.language.postfixOps
 

@@ -2,58 +2,42 @@ package org.lolhens.untisicalserver.ical
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
-import net.fortuna.ical4j.model._
-import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.property.Summary
-import org.lolhens.untisicalserver.data.SchoolClass
-import org.lolhens.untisicalserver.util.Utils._
-import scala.collection.JavaConverters._
+import org.lolhens.untisicalserver.data.Calendar
+import org.lolhens.untisicalserver.data.config.SchoolClass
 
 /**
   * Created by pierr on 30.08.2016.
   */
 object ICalTransformer {
   val flow: Flow[(SchoolClass, WeekOfYear, Calendar), (WeekOfYear, Calendar), NotUsed] =
-    Flow[(SchoolClass, WeekOfYear, Calendar)]
-      .map {
-        case (schoolClass, week, calendar) =>
-          val components = calendar.getComponents().asScala.toList.flatMap {
-            case event: VEvent =>
-              val lesson = Option(event.getSummary).map(_.getValue)
-              val description = Option(event.getDescription.getValue)
+    Flow[(SchoolClass, WeekOfYear, Calendar)].map {
+      case (schoolClass, week, calendar) =>
+        val newEvents =
+          calendar.events.flatMap { event =>
+            val lesson = event.summary
+            val description = event.description
 
-              val (classNames, teacher) = {
-                val split = description.get.split(" ")
-                (split.dropRight(1), split.last)
-              }
+            val classNames :: teacher :: _ = description.split(" ", -1).toList :+ ""
 
-              lesson match {
-                case Some(lesson) =>
-                  event.getSummary.setValue(s"$lesson")
+            val newSummary = lesson match {
+              case "" => "???"
+              case lesson => lesson
+            }
 
-                case None =>
-                  event.addProperty(new Summary("???"))
-              }
+            val teacherName = schoolClass.getTeacherName(teacher).getOrElse(teacher)
 
-              event.getDescription.setValue(
-                s"${
-                  lesson.map { lesson =>
-                    s"""$lesson${
-                      schoolClass.getLessonInfo(lesson).map(e => s" $e").getOrElse("")
-                    }\n"""
-                  }.getOrElse("")
-                }${
-                  schoolClass.getTeacherName(teacher).getOrElse(teacher)
-                }"
-              )
+            val lessonInfo = schoolClass.getLessonInfo(lesson).map(e => s" $e").getOrElse("")
 
-              if (classNames.contains(schoolClass.className) && !lesson.contains("Förder")) List(event) else Nil
+            val newDescription = s"$lesson$lessonInfo\n$teacherName"
 
-            case component =>
-              List(component)
+            if (classNames.contains(schoolClass.name) &&
+              !schoolClass.isLessonHidden(lesson)) List(event.copy(
+              summary = newSummary,
+              description = newDescription
+            ))
+            else Nil
           }
 
-          calendar.setComponents(components)
-          (week, calendar)
-      }
+        (week, calendar.copy(events = newEvents))
+    }
 }

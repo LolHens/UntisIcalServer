@@ -4,11 +4,9 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import monix.execution.atomic.Atomic
-import net.fortuna.ical4j.model.Calendar
-import org.lolhens.untisicalserver.data.SchoolClass
-import org.lolhens.untisicalserver.util.Utils._
+import org.lolhens.untisicalserver.data.Calendar
+import org.lolhens.untisicalserver.data.config.SchoolClass
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -17,7 +15,7 @@ class ICalProvider(val schoolClass: SchoolClass, interval: FiniteDuration) {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val calendarCache = Atomic(Map.empty[WeekOfYear, Calendar])
-  val currentCalendar = Atomic(ICalSplicer.emptyCalendar())
+  val currentCalendar = Atomic(Calendar.empty)
 
   Source.repeat(schoolClass)
     .throttle(1, interval, 1, ThrottleMode.Shaping)
@@ -31,10 +29,10 @@ class ICalProvider(val schoolClass: SchoolClass, interval: FiniteDuration) {
     .flatMapConcat {
       case (week, calendar) =>
         Source.single(calendar)
-          .map(_.getComponents.asScala.toList)
+          .map(_.events)
           .via(ICalEventMerger.flow)
-          .map { newComponents =>
-            calendar.setComponents(newComponents)
+          .map { newEvents =>
+            calendar.copy(events = newEvents)
             (week, calendar)
           }
     }
@@ -48,7 +46,7 @@ class ICalProvider(val schoolClass: SchoolClass, interval: FiniteDuration) {
     }
     .filter(_.nonEmpty)
     .map { calendars =>
-      val splicedCalendar = ICalSplicer.splice(calendars)
+      val splicedCalendar = Calendar(calendars.flatMap(_.events))
       currentCalendar.set(splicedCalendar)
     }
     .to(Sink.ignore)
