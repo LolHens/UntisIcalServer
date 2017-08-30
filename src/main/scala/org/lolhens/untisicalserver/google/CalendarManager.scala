@@ -66,52 +66,57 @@ case class CalendarManager(calendarService: CalendarService) {
     else Task.now()
   }
 
-  private def batched(batch: BatchRequest)(f: (BatchRequest) => Unit): Task[Unit] = {
+  private def batched(batch: BatchRequest)(f: (BatchRequest) => Task[Unit]): Task[Unit] = {
     val openedBatch = openBatch(batch)
-    f(openedBatch)
-    closeBatch(openedBatch, batch)
+    for {
+      _ <- f(openedBatch)
+      _ <- closeBatch(openedBatch, batch)
+    } yield ()
   }
 
-  def clear(calendar: CalendarListEntry, batch: BatchRequest = null): Task[Unit] = batched(batch) { batch =>
+  def clear(calendar: CalendarListEntry, batch: BatchRequest = null): Task[Unit] = batched(batch)(batch => Task.now {
     calendarService
       .calendars()
       .clear(calendar.getId)
       .queue(batch, emptyCallback)
-  }
+  })
 
   def removeEvent(calendar: CalendarListEntry, event: GEvent, batch: BatchRequest = null): Task[Unit] =
-    batched(batch) { batch =>
+    batched(batch)(batch => Task.now {
       calendarService
         .events()
         .delete(calendar.getId, event.getId)
         .queue(batch, emptyCallback)
-    }
+    })
 
   def removeEvents(calendar: CalendarListEntry, events: List[GEvent], batch: BatchRequest = null): Task[Unit] =
     batched(batch) { batch =>
       Task.gather(events.map(removeEvent(calendar, _, batch)))
+        .map(_ => ())
     }
 
   def addEvent(calendar: CalendarListEntry, event: GEvent, batch: BatchRequest = null): Task[Unit] =
-    batched(batch) { batch =>
+    batched(batch)(batch => Task.now {
       calendarService
         .events()
         .insert(calendar.getId, event)
         .queue(batch, emptyCallback)
-    }
+    })
 
   def addEvents(calendar: CalendarListEntry, events: List[GEvent], batch: BatchRequest = null): Task[Unit] =
     batched(batch) { batch =>
-      Task.gather(events.map(addEvent(calendar, _, null)))
+      Task.gather(events.map(addEvent(calendar, _, batch)))
+        .map(_ => ())
     }
 
-  def updateWeek(calendar: CalendarListEntry, week: WeekOfYear, events: List[GEvent], batch: BatchRequest = null): Task[Unit] = {
-    val openedBatch = openBatch(batch)
+  def updateWeek(calendar: CalendarListEntry,
+                 week: WeekOfYear,
+                 events: List[GEvent],
+                 batch: BatchRequest = null): Task[Unit] = batched(batch) { batch =>
     for {
       oldEvents <- listEvents(calendar, week)
-      _ <- removeEvents(calendar, oldEvents, openedBatch)
-      _ <- closeBatch(openedBatch, batch)
-      _ <- addEvents(calendar, filter(events, week), null)
+      _ <- removeEvents(calendar, oldEvents, batch)
+      _ <- addEvents(calendar, filter(events, week), batch)
 
       newEvents <- listEvents(calendar, week)
       _ = println(s"week $week ${week.localDateMin}: removed ${oldEvents.size} events; adding ${events.size}; added ${newEvents.size} events")

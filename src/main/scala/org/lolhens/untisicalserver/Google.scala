@@ -13,7 +13,7 @@ import scala.util.Try
 object Google {
   lazy val calendarManager = CalendarManager(Authorize.getCalendarService("UntisIcalServer", readonly = false).get)
 
-  val interval: FiniteDuration = 20.seconds // 2.minutes
+  val interval: FiniteDuration = 30.seconds // 2.minutes
 
   def updateCalendar(): Unit = {
     //Utils.setLogLevel
