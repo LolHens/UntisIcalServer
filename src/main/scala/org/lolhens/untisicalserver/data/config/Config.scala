@@ -1,13 +1,16 @@
 package org.lolhens.untisicalserver.data.config
 
 import java.io.File
+import java.util.TimeZone
 
 import com.typesafe.config.ConfigFactory
 import pureconfig._
 
-case class Config(schools: List[School]) {
+case class Config(timezone: Option[String], schools: List[School]) {
   def getSchoolClass(schoolRef: String, classRef: String): Option[SchoolClass] =
     schools.filter(_.ref.equalsIgnoreCase(schoolRef)).flatMap(_.classes).find(_.ref.equalsIgnoreCase(classRef))
+
+  timezone.foreach(zone => TimeZone.setDefault(TimeZone.getTimeZone(zone)))
 }
 
 object Config {
