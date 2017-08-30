@@ -118,8 +118,8 @@ case class CalendarManager(calendarService: CalendarService) {
       _ <- removeEvents(calendar, oldEvents, batch)
       _ <- addEvents(calendar, filter(events, week), batch)
 
-      newEvents <- listEvents(calendar, week)
-      _ = println(s"week $week ${week.localDateMin}: removed ${oldEvents.size} events; adding ${events.size}; added ${newEvents.size} events")
+      //newEvents <- listEvents(calendar, week)
+      _ = println(s"week $week ${week.localDateMin}: removed ${oldEvents.size} events; adding ${events.size}")
     } yield ()
   }
 }

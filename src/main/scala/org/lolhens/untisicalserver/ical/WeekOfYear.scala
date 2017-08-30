@@ -10,14 +10,11 @@ import org.lolhens.untisicalserver.ical.WeekOfYear._
   * Created by pierr on 24.03.2017.
   */
 case class WeekOfYear(year: Int, week: Int) {
-  private lazy val firstDayOfYear: LocalDate = {
-    val r = LocalDate.now()
+  private lazy val firstDayOfYear: LocalDate =
+    LocalDate.now()
       .withYear(year)
       .`with`(weekFields.weekOfYear(), 1)
       .`with`(weekFields.dayOfWeek(), 1)
-    println("first day: " + r)
-    r
-  }
 
   lazy val localDateMin: LocalDate =
     firstDayOfYear
@@ -31,7 +28,7 @@ case class WeekOfYear(year: Int, week: Int) {
 }
 
 object WeekOfYear {
-  private val weekFields = WeekFields.of(Locale.getDefault())
+  private lazy val weekFields = WeekFields.of(Locale.getDefault())
 
   def apply(localDate: LocalDate): WeekOfYear =
     WeekOfYear(localDate.getYear, localDate.get(weekFields.weekOfYear()))
