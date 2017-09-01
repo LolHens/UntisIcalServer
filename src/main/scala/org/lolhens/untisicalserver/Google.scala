@@ -13,7 +13,7 @@ import scala.util.Try
 object Google {
   lazy val calendarManager = CalendarManager(Authorize.getCalendarService("UntisIcalServer", readonly = false).get)
 
-  val interval: FiniteDuration = 30.seconds // 2.minutes
+  val interval: FiniteDuration = 10.seconds // 2.minutes
 
   def updateCalendar(): Unit = {
     //Utils.setLogLevel
@@ -35,6 +35,7 @@ object Google {
     Await.result(t.runAsync, Duration.Inf)*/
 
     while (true) {
+      println("loop")
       Try {
         val calendars = schoolClass.iCalProvider.all
 
@@ -49,6 +50,7 @@ object Google {
           unordered = true
         ).runAsync, 5.minutes)
       }.failed.foreach(_.printStackTrace())
+      println("looped")
 
       Try(Thread.sleep(interval.toMillis))
     }
