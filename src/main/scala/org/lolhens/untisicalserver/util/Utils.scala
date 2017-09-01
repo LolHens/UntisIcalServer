@@ -36,7 +36,7 @@ object Utils {
   }
 
   implicit class RichLocalDate(val localDate: LocalDate) extends AnyVal {
-    def midnight: LocalDateTime = LocalDateTime.of(localDate, LocalTime.MIDNIGHT)
+    def dayStart: LocalDateTime = LocalDateTime.of(localDate, LocalTime.MIDNIGHT)
   }
 
   implicit class RichCalendar(val calendar: Calendar) extends AnyVal {

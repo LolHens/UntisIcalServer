@@ -24,6 +24,8 @@ object GoogleConverters {
 
   implicit class RichEventDateTime(val eventDateTime: EventDateTime) extends AnyVal {
     def toGoogleDateTime: DateTime = Option(eventDateTime.getDateTime).getOrElse(eventDateTime.getDate)
+
+    def toLocalDateTime: LocalDateTime = toGoogleDateTime.toLocalDateTime
   }
 
   implicit class RichGoogleLocalDateTime(val localDateTime: LocalDateTime) extends AnyVal {

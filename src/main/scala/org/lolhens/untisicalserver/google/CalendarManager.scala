@@ -9,6 +9,7 @@ import com.google.api.client.http.HttpHeaders
 import com.google.api.services.calendar.model.{CalendarListEntry, Event => GEvent}
 import com.google.api.services.calendar.{Calendar => CalendarService}
 import monix.eval.Task
+import org.lolhens.untisicalserver.data.Event
 import org.lolhens.untisicalserver.google.CalendarManager._
 import org.lolhens.untisicalserver.ical.WeekOfYear
 import org.lolhens.untisicalserver.util.GoogleConverters._
@@ -56,8 +57,12 @@ case class CalendarManager(calendarService: CalendarService) {
   }
 
   def listEvents(calendar: CalendarListEntry,
+                 date: LocalDate): Task[List[GEvent]] =
+    listEvents(calendar, date.dayStart, date.dayStart.plusDays(1))
+
+  def listEvents(calendar: CalendarListEntry,
                  week: WeekOfYear): Task[List[GEvent]] =
-    listEvents(calendar, week.localDateMin.midnight, week.localDateMax.midnight)
+    listEvents(calendar, week.localDateMin.dayStart, week.localDateMax.dayStart)
 
   private def openBatch(batch: BatchRequest): BatchRequest = Option(batch).getOrElse(calendarService.batch())
 
@@ -109,6 +114,81 @@ case class CalendarManager(calendarService: CalendarService) {
         .map(_ => ())
     }
 
+  def patchEvent(calendar: CalendarListEntry,
+                 oldEvent: GEvent,
+                 newEvent: GEvent,
+                 batch: BatchRequest = null): Task[Unit] =
+    batched(batch)(batch => Task.now {
+      calendarService
+        .events()
+        .update(calendar.getId, oldEvent.getId, newEvent)
+        .queue(batch, emptyCallback)
+    })
+
+  def patchEvents(calendar: CalendarListEntry, events: Map[GEvent, GEvent], batch: BatchRequest = null): Task[Unit] =
+    batched(batch) { batch =>
+      Task.gather(events.map(e => patchEvent(calendar, e._1, e._2, batch)))
+        .map(_ => ())
+    }
+
+  private abstract class UpdateEventResult {
+    def remainingOldEvents(events: List[GEvent]): List[GEvent]
+  }
+
+  private object UpdateEventResult {
+
+    case class KeepOld(oldEvent: GEvent) extends UpdateEventResult {
+      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events.filterNot(_ == oldEvent)
+    }
+
+    case class Replace(oldEvent: GEvent, newEvent: GEvent) extends UpdateEventResult {
+      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events.filterNot(_ == oldEvent)
+    }
+
+    case class AddNew(newEvent: GEvent) extends UpdateEventResult {
+      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events
+    }
+
+  }
+
+  private def findEventUpdate(oldEvents: List[GEvent],
+                              newEvent: GEvent): (Option[(GEvent, GEvent)], List[GEvent]) = {
+    val newEvent2 = Event.fromGEvent(newEvent2)
+
+    def prio1 = oldEvents.find { oldEvent =>
+      Event.fromGEvent(oldEvent) == newEvent2
+    }
+
+    def prio2 = oldEvents.find { oldEvent =>
+      oldEvent.getStart.toLocalDateTime == newEvent.getStart.toLocalDateTime &&
+        oldEvent.getEnd.toLocalDateTime == newEvent.getEnd.toLocalDateTime
+    }
+
+    prio1.orElse(prio2.map(_ => newEvent))
+  }
+
+  def updateDay(calendar: CalendarListEntry,
+                date: LocalDate,
+                events: List[GEvent],
+                batch: BatchRequest = null): Task[Unit] = batched(batch) { batch =>
+    for {
+      oldEvents <- listEvents(calendar, date)
+      _ = {
+        val newGrouped: Map[(LocalDateTime, LocalDateTime), List[GEvent]] =
+          events.groupBy(e => e.getStart.toLocalDateTime -> e.getEnd.toLocalDateTime)
+
+        val oldGrouped: Map[(LocalDateTime, LocalDateTime), List[GEvent]] =
+          oldEvents.groupBy(e => e.getStart.toLocalDateTime -> e.getEnd.toLocalDateTime)
+
+        val patched = oldGrouped.map {
+          case (interval, oldEvents) =>
+            val newEvents = newGrouped.getOrElse(interval, Nil)
+            newEvents
+        }
+      }
+    }
+  }
+
   def updateWeek(calendar: CalendarListEntry,
                  week: WeekOfYear,
                  events: List[GEvent],
@@ -143,5 +223,5 @@ object CalendarManager {
     }
 
   def filter(events: List[GEvent], week: WeekOfYear): List[GEvent] =
-    filter(events, week.localDateMin.midnight, week.localDateMax.midnight)
+    filter(events, week.localDateMin.dayStart, week.localDateMax.dayStart)
 }
