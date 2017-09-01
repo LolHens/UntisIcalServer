@@ -34,6 +34,10 @@ case class Event(summary: String,
 
     gEvent
   }
+
+  def line: String = toString
+    .replaceAllLiterally("\r", "")
+    .replaceAllLiterally("\n", "")
 }
 
 object Event {

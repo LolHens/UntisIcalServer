@@ -174,18 +174,15 @@ case class CalendarManager(calendarService: CalendarService) {
                    oldEvents: List[GEvent],
                    newEvents: List[GEvent],
                    batch: BatchRequest = null): Task[Unit] = batched(batch)(batch => Task {
-    //println("a")
-    //println(newEvents)
     val eventUpdates = newEvents.map(findEventUpdate(oldEvents, _))
-    //println("b")
     val removeOld = eventUpdates.foldLeft(oldEvents) { (lastOldEvents, eventUpdate) =>
       eventUpdate match {
-        case UpdateEventResult.KeepOld(oldEvent)  =>
+        case UpdateEventResult.KeepOld(oldEvent) =>
           println("keep old")
           eventUpdate.remainingOldEvents(lastOldEvents)
 
         case UpdateEventResult.Replace(oldEvent, newEvent) =>
-          println("replace " + Event.fromGEvent(oldEvent) + " " + Event.fromGEvent(newEvent))
+          println("replace " + Event.fromGEvent(oldEvent).line + " with " + Event.fromGEvent(newEvent).line)
           patchEvent(calendar, oldEvent, newEvent, batch)
           eventUpdate.remainingOldEvents(lastOldEvents)
 
@@ -206,24 +203,24 @@ case class CalendarManager(calendarService: CalendarService) {
                 batch: BatchRequest = null): Task[Unit] = batched(batch) { batch =>
     for {
       oldEvents <- listEvents(calendar, date)
-      _ <- updateEvents(calendar, oldEvents, events, batch)
+      _ <- updateEvents(calendar, oldEvents, filter(events, date), batch)
     } yield ()
   }
 
   def updateWeek(calendar: CalendarListEntry,
-                  week: WeekOfYear,
-                  events: List[GEvent],
-                  batch: BatchRequest = null): Task[Unit] = batched(batch) { batch =>
+                 week: WeekOfYear,
+                 events: List[GEvent],
+                 batch: BatchRequest = null): Task[Unit] = batched(batch) { batch =>
     for {
       oldEvents <- listEvents(calendar, week)
-      _ <- updateEvents(calendar, oldEvents, events, batch)
+      _ <- updateEvents(calendar, oldEvents, filter(events, week), batch)
     } yield ()
   }
 
   def updateWeek2(calendar: CalendarListEntry,
-                 week: WeekOfYear,
-                 events: List[GEvent],
-                 batch: BatchRequest = null): Task[Unit] = batched(batch) { batch =>
+                  week: WeekOfYear,
+                  events: List[GEvent],
+                  batch: BatchRequest = null): Task[Unit] = batched(batch) { batch =>
     for {
       oldEvents <- listEvents(calendar, week)
       _ <- removeEvents(calendar, oldEvents, batch)

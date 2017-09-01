@@ -48,7 +48,7 @@ object Google {
             calendarManager.updateWeek(calendar, week, events)
           },
           unordered = true
-        ).runAsync, 5.minutes)
+        ).runAsync, 10.minutes)
       }.failed.foreach(_.printStackTrace())
       println("looped")
 
