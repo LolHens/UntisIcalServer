@@ -4,6 +4,7 @@ import java.time.LocalDateTime
 
 import com.google.api.services.calendar.model.{Event => GEvent}
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property._
 import org.lolhens.untisicalserver.util.GoogleConverters._
 import org.lolhens.untisicalserver.util.ICalConverters._
 import org.lolhens.untisicalserver.util.Utils._
@@ -15,11 +16,11 @@ case class Event(summary: String,
                  end: LocalDateTime) {
   def toVEvent: VEvent = {
     val vEvent = new VEvent()
-    vEvent.getSummary.setValue(summary)
-    vEvent.getDescription.setValue(description)
-    vEvent.getLocation.setValue(location)
-    vEvent.getStartDate.setDate(start.toICalDate)
-    vEvent.getEndDate.setDate(end.toICalDate)
+    vEvent.addProperty(new Summary(summary))
+    vEvent.addProperty(new Description(description))
+    vEvent.addProperty(new Location(location))
+    vEvent.addProperty(new DtStart(start.toICalDate))
+    vEvent.addProperty(new DtEnd(end.toICalDate))
     vEvent
   }
 
