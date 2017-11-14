@@ -3,14 +3,13 @@ name := "UntisIcalServer"
 mainClass := Some("org.lolhens.untisicalserver.Main")
 
 lazy val settings = Seq(
-  version := "1.8.3",
+  version := "1.8.4",
 
-  scalaVersion := "2.12.3",
+  scalaVersion := "2.12.4",
 
-  externalResolvers := Seq(
-    Resolver.defaultLocal,
-    "artifactory-maven" at "http://lolhens.no-ip.org/artifactory/maven-public/",
-    Resolver.url("artifactory-ivy", url("http://lolhens.no-ip.org/artifactory/ivy-public/"))(Resolver.ivyStylePatterns)
+  resolvers ++= Seq(
+    "lolhens-maven" at "http://artifactory.lolhens.de/artifactory/maven-public/",
+    Resolver.url("lolhens-ivy", url("http://artifactory.lolhens.de/artifactory/ivy-public/"))(Resolver.ivyStylePatterns)
   ),
 
   libraryDependencies ++= Seq(
@@ -21,19 +20,19 @@ lazy val settings = Seq(
     "org.typelevel" %% "cats" % "0.9.0",
     "com.chuusai" %% "shapeless" % "2.3.2",
     "com.github.mpilquist" %% "simulacrum" % "0.11.0",
-    "io.monix" %% "monix" % "2.3.0",
-    "io.monix" %% "monix-cats" % "2.3.0",
-    "com.typesafe.akka" %% "akka-actor" % "2.5.4",
-    "com.typesafe.akka" %% "akka-remote" % "2.5.4",
-    "com.typesafe.akka" %% "akka-stream" % "2.5.4",
-    "com.typesafe.akka" %% "akka-http" % "10.0.9",
-    "io.spray" %% "spray-json" % "1.3.3",
+    "io.monix" %% "monix" % "2.3.2",
+    "io.monix" %% "monix-cats" % "2.3.2",
+    "com.typesafe.akka" %% "akka-actor" % "2.5.6",
+    "com.typesafe.akka" %% "akka-remote" % "2.5.6",
+    "com.typesafe.akka" %% "akka-stream" % "2.5.6",
+    "com.typesafe.akka" %% "akka-http" % "10.0.10",
+    "io.spray" %% "spray-json" % "1.3.4",
     "com.github.fommil" %% "spray-json-shapeless" % "1.4.0",
     "net.databinder.dispatch" %% "dispatch-core" % "0.12.3",
-    "org.mnode.ical4j" % "ical4j" % "2.0.4",
+    "org.mnode.ical4j" % "ical4j" % "2.1.4",
     "com.github.pureconfig" %% "pureconfig" % "0.8.0",
-    "com.google.api-client" % "google-api-client" % "1.22.0",
-    "com.google.oauth-client" % "google-oauth-client-jetty" % "1.22.0",
+    "com.google.api-client" % "google-api-client" % "1.23.0",
+    "com.google.oauth-client" % "google-oauth-client-jetty" % "1.23.0",
     "com.google.apis" % "google-api-services-calendar" % "v3-rev254-1.22.0"
   ),
 

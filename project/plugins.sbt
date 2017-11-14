@@ -1,22 +1,21 @@
 logLevel := Level.Warn
 
-externalResolvers := Seq(
-  Resolver.defaultLocal,
-  "artifactory-maven" at "http://lolhens.no-ip.org/artifactory/maven-public/",
-  Resolver.url("artifactory-ivy", url("http://lolhens.no-ip.org/artifactory/ivy-public/"))(Resolver.ivyStylePatterns)
+resolvers ++= Seq(
+  "lolhens-maven" at "http://artifactory.lolhens.de/artifactory/maven-public/",
+  Resolver.url("lolhens-ivy", url("http://artifactory.lolhens.de/artifactory/ivy-public/"))(Resolver.ivyStylePatterns)
 )
 
 //addSbtPlugin("io.get-coursier" % "sbt-coursier" % "1.0.0-M15")
 
-addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.3.0")
+addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.3.3")
 
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0")
 
-//addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "5.0.1")
+//addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "5.2.3")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.2")
 
-addSbtPlugin("org.lolhens" % "sbt-classpath-jar" % "1.1.4")
+addSbtPlugin("de.lolhens.sbt" % "sbt-classpath-jar" % "1.2.2")
 
 //addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.3")
 
