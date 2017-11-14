@@ -19,8 +19,8 @@ case class Event(summary: String,
     vEvent.addProperty(new Summary(summary))
     vEvent.addProperty(new Description(description))
     vEvent.addProperty(new Location(location))
-    vEvent.addProperty(new DtStart(start.toICalDate))
-    vEvent.addProperty(new DtEnd(end.toICalDate))
+    vEvent.addProperty(new DtStart(start.toICalDateTime))
+    vEvent.addProperty(new DtEnd(end.toICalDateTime))
     vEvent
   }
 

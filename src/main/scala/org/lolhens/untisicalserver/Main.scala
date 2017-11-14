@@ -5,6 +5,7 @@ import org.lolhens.untisicalserver.http.server.ICalServer
 import org.lolhens.untisicalserver.util.Utils
 
 import scala.language.postfixOps
+import scala.util.Try
 
 
 /**
@@ -19,7 +20,7 @@ object Main {
     val iCalServer = new ICalServer(config)
     iCalServer.start()
 
-    Google.updateCalendar()
+    Try(Google.updateCalendar()).failed.foreach(_.printStackTrace)
   }
 }
 
