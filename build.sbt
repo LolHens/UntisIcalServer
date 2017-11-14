@@ -3,7 +3,7 @@ name := "UntisIcalServer"
 mainClass := Some("org.lolhens.untisicalserver.Main")
 
 lazy val settings = Seq(
-  version := "1.8.4",
+  version := "1.8.5",
 
   scalaVersion := "2.12.4",
 
@@ -29,7 +29,7 @@ lazy val settings = Seq(
     "io.spray" %% "spray-json" % "1.3.4",
     "com.github.fommil" %% "spray-json-shapeless" % "1.4.0",
     "net.databinder.dispatch" %% "dispatch-core" % "0.12.3",
-    "org.mnode.ical4j" % "ical4j" % "2.1.4",
+    "org.mnode.ical4j" % "ical4j" % "2.0.5",
     "com.github.pureconfig" %% "pureconfig" % "0.8.0",
     "com.google.api-client" % "google-api-client" % "1.23.0",
     "com.google.oauth-client" % "google-oauth-client-jetty" % "1.23.0",
