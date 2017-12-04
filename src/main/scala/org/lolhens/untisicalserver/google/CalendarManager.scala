@@ -4,8 +4,9 @@ import java.time._
 
 import com.google.api.client.googleapis.batch.BatchRequest
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonError
-import com.google.api.client.http.HttpHeaders
+import com.google.api.client.http.{HttpHeaders, HttpRequestInitializer}
 import com.google.api.services.calendar.model.{CalendarListEntry, Event => GEvent}
 import com.google.api.services.calendar.{Calendar => CalendarService}
 import monix.eval.Task
@@ -64,7 +65,14 @@ case class CalendarManager(calendarService: CalendarService) {
                  week: WeekOfYear): Task[List[GEvent]] =
     listEvents(calendar, week.localDateMin.dayStart, week.localDateMax.dayStart)
 
-  private def openBatch(batch: BatchRequest): BatchRequest = Option(batch).getOrElse(calendarService.batch())
+  private def openBatch(batch: BatchRequest): BatchRequest = Option(batch).getOrElse {
+    val batch = new BatchRequest(GoogleNetHttpTransport.newTrustedTransport(),
+      calendarService.getGoogleClientRequestInitializer.asInstanceOf[HttpRequestInitializer])
+
+    //calendarService.batch()
+
+    batch
+  }
 
   private def closeBatch(openedBatch: BatchRequest, batch: BatchRequest): Task[Unit] = {
     if (batch == null && openedBatch.size() > 0) Task(openedBatch.execute())
