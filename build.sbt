@@ -39,7 +39,34 @@ lazy val settings = Seq(
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.4"),
 
-  scalacOptions ++= Seq("-Xmax-classfile-name", "127")
+  scalacOptions ++= Seq("-Xmax-classfile-name", "127"),
+
+  assemblyOption in assembly := {
+    def universalScript(shellCommands: Seq[String],
+                                cmdCommands: Seq[String],
+                                shebang: Boolean = true): Seq[String] = {
+      Seq(
+        Seq("#!/usr/bin/env sh")
+          .filter(_ => shebang),
+        Seq(":; alias ::=''"),
+        (shellCommands :+ "exit")
+          .map(line => s":: $line"),
+        "@echo off" +: cmdCommands :+ "exit /B",
+        Seq("\r\n")
+      ).flatten
+    }
+
+    def defaultUniversalScript(shebang: Boolean = true): Seq[String] =
+      universalScript(
+        shellCommands = Seq("""exec java -jar $JAVA_OPTS "$0" "$@""""),
+        cmdCommands = Seq("""java -jar %JAVA_OPTS% "%~dpnx0" %*"""),
+        shebang = shebang
+      )
+
+    (assemblyOption in assembly).value.copy(prependShellScript = Some(defaultUniversalScript()))
+  },
+
+  assemblyJarName in assembly := s"${name.value}-${version.value}.cmd"
 )
 
 def packageConfFolder(confName: String) = Seq(
