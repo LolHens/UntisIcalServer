@@ -68,7 +68,7 @@ lazy val settings = Seq(
     (assemblyOption in assembly).value.copy(prependShellScript = Some(defaultUniversalScript()))
   },
 
-  assemblyJarName in assembly := s"${name.value}-${version.value}.cmd"
+  assemblyJarName in assembly := s"${name.value}-${version.value}.sh.bat"
 )
 
 def packageConfFolder(confName: String) = Seq(
