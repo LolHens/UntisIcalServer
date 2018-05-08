@@ -17,8 +17,8 @@ case class CalendarProvider(schoolClass: SchoolClass) {
       CalendarRequester.request(schoolClass, week)
         .onErrorRecoverWith {
           case err =>
-            err.printStackTrace()
             println(s"Retrying $retries times after: $err") //TODO
+            //err.printStackTrace()
             if (retries <= 0) Task.raiseError(err)
             else retryReceiveWeek(retries - 1).delayExecution(5.seconds)
         }

@@ -24,10 +24,10 @@ class CalendarCache(val schoolClass: SchoolClass,
       cache.updated(week, calendar)
     }
 
-  val updateCacheContinuously: Task[Unit] =
+  /*val updateCacheContinuously: Task[Unit] =
     Observable.timerRepeated(0.seconds, interval, updateCache)
       .flatten
-      .foreachL(_ => ())
+      .foreachL(_ => ())*/
 
   val calendars: Task[Map[WeekOfYear, Calendar]] =
     Task(calendarCache.get)
@@ -39,7 +39,7 @@ class CalendarCache(val schoolClass: SchoolClass,
     for {
       calendars <- calendars
     } yield
-      Calendar(calendars.values.flatMap(_.events).toList)
+      Calendar(calendars.toList.sortBy(_._1).flatMap(_._2.events).toList)
 
   def calendarNow(): Calendar =
     Await.result(calendar.runAsync, 10.minutes)

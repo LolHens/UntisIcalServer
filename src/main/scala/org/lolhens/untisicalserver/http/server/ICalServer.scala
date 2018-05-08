@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri, _}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import monix.eval.Task
 import org.lolhens.untisicalserver.data.config.Config
 
 import scala.concurrent.Future
@@ -16,10 +17,9 @@ import scala.concurrent.Future
   * Created by pierr on 31.08.2016.
   */
 class ICalServer(config: Config) {
-  def start() = {
+  val start: Task[Unit] = Task {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    implicit val executionContext = system.dispatcher
 
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
       Http().bind(interface = "0.0.0.0", port = 8080)
@@ -45,7 +45,8 @@ class ICalServer(config: Config) {
         connection.handleWith(Flow[HttpRequest].collect {
           case r@HttpRequest(GET, Uri.Path(ClassId(schoolRef, classRef)), _, _, _) if config.getSchoolClass(schoolRef, classRef).nonEmpty =>
             val schoolClass = config.getSchoolClass(schoolRef, classRef).get
-            val response = schoolClass.calendars.calendarNow().icalString.getBytes(StandardCharsets.UTF_8)
+            val calendar = schoolClass.calendars.calendarNow()
+            val response = calendar.icalString.getBytes(StandardCharsets.UTF_8)
 
             r.discardEntityBytes()
             HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, response))

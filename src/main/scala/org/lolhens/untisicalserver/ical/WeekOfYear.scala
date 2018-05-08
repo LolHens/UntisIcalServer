@@ -30,6 +30,8 @@ case class WeekOfYear(year: Int, week: Int) {
 }
 
 object WeekOfYear {
+  implicit val ordering: Ordering[WeekOfYear] = Ordering.by(week => (week.year, week.week))
+
   private lazy val weekFields = WeekFields.of(Locale.getDefault())
 
   def apply(localDate: LocalDate): WeekOfYear =
@@ -52,4 +54,5 @@ object WeekOfYear {
       rec(start)
     }
   }
+
 }

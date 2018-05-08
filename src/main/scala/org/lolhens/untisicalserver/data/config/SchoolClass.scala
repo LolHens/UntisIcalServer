@@ -15,10 +15,6 @@ case class SchoolClass(id: Int,
 
   val calendars = new CalendarCache(this, 2.minutes)
 
-  def updateCache(): Unit = calendars.updateCacheContinuously.runAsync
-
-  updateCache() // TODO
-
   def getTeacherName(name: String): Option[String] =
     school.teachers.get(name.toLowerCase)
 
