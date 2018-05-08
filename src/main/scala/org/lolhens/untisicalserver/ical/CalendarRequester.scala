@@ -4,6 +4,7 @@ import java.time.LocalDate
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
+import monix.eval.Task
 import monix.execution.FutureUtils.extensions._
 import org.lolhens.untisicalserver.data.Calendar
 import org.lolhens.untisicalserver.data.config.SchoolClass
@@ -28,7 +29,7 @@ object CalendarRequester {
 
   private val stringReceiver = new StringReceiver(10 seconds)
 
-  val flow: Flow[(SchoolClass, WeekOfYear), (SchoolClass, Try[Calendar]), NotUsed] =
+  /*val flow: Flow[(SchoolClass, WeekOfYear), (SchoolClass, Try[Calendar]), NotUsed] =
     Flow[(SchoolClass, WeekOfYear)]
       .map {
         case (schoolClass, week) =>
@@ -36,7 +37,7 @@ object CalendarRequester {
       }
       .mapAsync(8) {
         case (schoolClass, url) =>
-          stringReceiver.receive(url).materialize
+          stringReceiver.receive(url).materialize.runAsync
             .map { icalStringTry =>
               (schoolClass, icalStringTry)
             }
@@ -46,5 +47,14 @@ object CalendarRequester {
 
       case (schoolClass, Failure(e)) =>
         (schoolClass, Failure(e))
-    }
+    }*/
+
+  def task(schoolClass: SchoolClass,
+           week: WeekOfYear): Task[Try[Calendar]] = {
+    val url = iCalUrl(schoolClass, week.localDateMin)
+
+    stringReceiver.receive(url).flatMap(icalString => Task.fromTry(
+      Calendar.parse(icalString)
+    )).materialize
+  }
 }

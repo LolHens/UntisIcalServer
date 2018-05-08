@@ -6,6 +6,7 @@ import akka.stream.{ActorMaterializer, ThrottleMode}
 import monix.execution.atomic.Atomic
 import org.lolhens.untisicalserver.data.Calendar
 import org.lolhens.untisicalserver.data.config.SchoolClass
+import monix.execution.Scheduler.Implicits.global
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -30,7 +31,7 @@ class ICalProvider(val schoolClass: SchoolClass, interval: FiniteDuration) {
       case (week, calendar) =>
         Source.single(calendar)
           .map(_.events)
-          .via(ICalEventMerger.flow)
+          .mapAsync(1)(events => ICalEventMerger.mergeEvents(events).runAsync)
           .map { newEvents =>
             (week, calendar.copy(events = newEvents))
           }

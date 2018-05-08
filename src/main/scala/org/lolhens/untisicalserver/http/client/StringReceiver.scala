@@ -2,6 +2,7 @@ package org.lolhens.untisicalserver.http.client
 
 import com.ning.http.util.ProxyUtils
 import dispatch.{Http, as, url}
+import monix.eval.Task
 import org.lolhens.untisicalserver.http.FakeSSL
 import org.lolhens.untisicalserver.http.client.StringReceiver._
 
@@ -22,9 +23,9 @@ class StringReceiver(timeout: Duration = defaultTimeout) {
     .setConnectTimeout(timeout.toMillis.toInt)
     .setRequestTimeout(timeout.toMillis.toInt))
 
-  def receive(_url: String): Future[String] = {
+  def receive(_url: String): Task[String] = {
     val svc = url(_url)
-    http(svc OK as.String)
+    Task.fromFuture(http(svc OK as.String))
   }
 }
 
