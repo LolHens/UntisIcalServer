@@ -1,6 +1,7 @@
 package org.lolhens.untisicalserver.data.config
 
-import org.lolhens.untisicalserver.ical.ICalProvider
+import org.lolhens.untisicalserver.ical.{CalendarCache, CalendarProvider}
+import monix.execution.Scheduler.Implicits.global
 
 import scala.concurrent.duration._
 
@@ -12,7 +13,11 @@ case class SchoolClass(id: Int,
 
   def school: School = _school
 
-  lazy val iCalProvider = new ICalProvider(this, 2.minutes)
+  val calendars = new CalendarCache(this, 2.minutes)
+
+  def updateCache(): Unit = calendars.updateCacheContinuously.runAsync
+
+  updateCache() // TODO
 
   def getTeacherName(name: String): Option[String] =
     school.teachers.get(name.toLowerCase)

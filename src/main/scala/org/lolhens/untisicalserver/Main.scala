@@ -20,7 +20,8 @@ object Main {
     val iCalServer = new ICalServer(config)
     iCalServer.start()
 
-    Try(Google.updateCalendar()).failed.foreach(_.printStackTrace)
+
+    //Try(Google.updateCalendar()).failed.foreach(_.printStackTrace)
   }
 }
 

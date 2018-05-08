@@ -37,7 +37,7 @@ object Google {
     while (true) {
       println("loop")
       Try {
-        val calendars = schoolClass.iCalProvider.all
+        val calendars = schoolClass.calendars.calendarsNow()
 
         Await.result(Utils.parallel(
           for {

@@ -4,8 +4,9 @@ import java.time.LocalDate
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
-import monix.eval.Task
+import monix.eval.{Task, TaskCircuitBreaker}
 import monix.execution.FutureUtils.extensions._
+import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.Calendar
 import org.lolhens.untisicalserver.data.config.SchoolClass
 import org.lolhens.untisicalserver.http.client.StringReceiver
@@ -29,32 +30,23 @@ object CalendarRequester {
 
   private val stringReceiver = new StringReceiver(10 seconds)
 
-  /*val flow: Flow[(SchoolClass, WeekOfYear), (SchoolClass, Try[Calendar]), NotUsed] =
-    Flow[(SchoolClass, WeekOfYear)]
-      .map {
-        case (schoolClass, week) =>
-          (schoolClass, iCalUrl(schoolClass, week.localDateMin))
-      }
-      .mapAsync(8) {
-        case (schoolClass, url) =>
-          stringReceiver.receive(url).materialize.runAsync
-            .map { icalStringTry =>
-              (schoolClass, icalStringTry)
-            }
-      }.map {
-      case (schoolClass, Success(icalString: String)) =>
-        (schoolClass, Calendar.parse(icalString))
+  private val circuitBreaker = TaskCircuitBreaker(
+    maxFailures = 5,
+    resetTimeout = 10.seconds
+  ).memoize
 
-      case (schoolClass, Failure(e)) =>
-        (schoolClass, Failure(e))
-    }*/
-
-  def task(schoolClass: SchoolClass,
-           week: WeekOfYear): Task[Try[Calendar]] = {
+  def request(schoolClass: SchoolClass,
+              week: WeekOfYear): Task[Calendar] = {
     val url = iCalUrl(schoolClass, week.localDateMin)
 
-    stringReceiver.receive(url).flatMap(icalString => Task.fromTry(
-      Calendar.parse(icalString)
-    )).materialize
+    val calendar = stringReceiver.receive(url)
+      .flatMap(icalString =>
+        Task.fromTry(Calendar.parse(icalString))
+      )
+
+    for {
+      ci <- circuitBreaker
+      r <- ci.protect(calendar)
+    } yield r
   }
 }
