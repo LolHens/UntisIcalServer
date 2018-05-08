@@ -16,7 +16,10 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 object Authorize {
-  val dataStoreDir = new File(System.getProperty("user.home"), ".credentials/untis-ical-server")
+  private def jarDirPath(): File =
+    new File(getClass.getProtectionDomain.getCodeSource.getLocation.toURI.getPath).getParentFile
+
+  lazy val dataStoreDir: File = new File(jarDirPath().getParentFile, "conf")
 
   val dataStoreFactory = new FileDataStoreFactory(dataStoreDir)
 
