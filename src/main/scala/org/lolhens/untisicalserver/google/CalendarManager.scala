@@ -10,6 +10,7 @@ import com.google.api.client.http.{HttpHeaders, HttpRequestInitializer}
 import com.google.api.services.calendar.model.{CalendarListEntry, Event => GEvent}
 import com.google.api.services.calendar.{Calendar => CalendarService}
 import monix.eval.Task
+import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.Event
 import org.lolhens.untisicalserver.google.CalendarManager._
 import org.lolhens.untisicalserver.ical.WeekOfYear
@@ -60,7 +61,8 @@ case class CalendarManager(calendarService: CalendarService) {
 
   def listEvents2(calendar: CalendarListEntry,
                   min: LocalDateTime = null,
-                  max: LocalDateTime = null): Task[List[GEvent]] = {
+                  max: LocalDateTime = null,
+                  showDeleted: Boolean = false): Observable[GEvent] = {
     def pageEvents(pageToken: String): Task[(Option[String], List[GEvent])] =
       for {
         events <- Task {
@@ -70,6 +72,7 @@ case class CalendarManager(calendarService: CalendarService) {
             .setTimeMin(min.toGoogleDateTime)
             .setTimeMax(max.toGoogleDateTime)
             .setPageToken(pageToken)
+            .setShowDeleted(showDeleted)
             .setSingleEvents(true) // TODO
             .execute()
         }.timeout(5.seconds)
