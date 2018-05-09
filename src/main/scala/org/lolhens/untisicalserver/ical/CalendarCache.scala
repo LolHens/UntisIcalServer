@@ -1,14 +1,12 @@
 package org.lolhens.untisicalserver.ical
 
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits.global
 import monix.execution.atomic.Atomic
 import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.Calendar
 import org.lolhens.untisicalserver.data.config.SchoolClass
 
-import scala.concurrent.Await
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.FiniteDuration
 
 class CalendarCache(val schoolClass: SchoolClass,
                     val interval: FiniteDuration) {
@@ -24,23 +22,12 @@ class CalendarCache(val schoolClass: SchoolClass,
       cache.updated(week, calendar)
     }
 
-  /*val updateCacheContinuously: Task[Unit] =
-    Observable.timerRepeated(0.seconds, interval, updateCache)
-      .flatten
-      .foreachL(_ => ())*/
-
   val calendars: Task[Map[WeekOfYear, Calendar]] =
     Task(calendarCache.get)
-
-  def calendarsNow(): Map[WeekOfYear, Calendar] =
-    Await.result(calendars.runAsync, 10.minutes)
 
   val calendar: Task[Calendar] =
     for {
       calendars <- calendars
     } yield
-      Calendar(calendars.toList.sortBy(_._1).flatMap(_._2.events).toList)
-
-  def calendarNow(): Calendar =
-    Await.result(calendar.runAsync, 10.minutes)
+      Calendar(calendars.toList.sortBy(_._1).flatMap(_._2.events))
 }

@@ -123,15 +123,4 @@ case class CalendarProvider(schoolClass: SchoolClass) {
       calendar <- Observable.fromTask(mergeCalendarEvents(calendar))
     } yield
       week -> calendar
-
-  /*val cachedCalendars: Observable[Map[WeekOfYear, Calendar]] =
-    for {
-      (week, calendar) <- calendars
-    } yield calendarCache.transformAndGet { cache =>
-      cache.updated(week, calendar)
-    }
-
-  def continuousCalendars: Observable[(WeekOfYear, Calendar)] =
-    Observable.repeat(calendars).flatten
-  */
 }

@@ -2,7 +2,6 @@ package org.lolhens.untisicalserver
 
 import com.google.api.services.calendar.model.CalendarListEntry
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.config.{Config, School, SchoolClass}
 import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
@@ -41,7 +40,4 @@ object Google {
     Observable.timerRepeated(10.seconds, interval, ())
       .mapParallelUnordered(1)(_ => updateCalendar)
       .completedL
-
-  def runUpdateCalendarContinuously(interval: FiniteDuration): Unit =
-    updateCalendarContinuously(interval).runAsync
 }

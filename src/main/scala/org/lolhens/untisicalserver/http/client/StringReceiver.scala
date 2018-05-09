@@ -7,7 +7,6 @@ import org.lolhens.untisicalserver.http.FakeSSL
 import org.lolhens.untisicalserver.http.client.StringReceiver._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 

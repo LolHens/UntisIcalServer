@@ -11,13 +11,14 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import monix.eval.Task
 import org.lolhens.untisicalserver.data.config.Config
 
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 /**
   * Created by pierr on 31.08.2016.
   */
 class ICalServer(config: Config) {
-  val start: Task[Unit] = Task {
+  val start: Task[Http.ServerBinding] = Task.deferFutureAction { implicit scheduler =>
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
@@ -45,7 +46,7 @@ class ICalServer(config: Config) {
         connection.handleWith(Flow[HttpRequest].collect {
           case r@HttpRequest(GET, Uri.Path(ClassId(schoolRef, classRef)), _, _, _) if config.getSchoolClass(schoolRef, classRef).nonEmpty =>
             val schoolClass = config.getSchoolClass(schoolRef, classRef).get
-            val calendar = schoolClass.calendars.calendarNow()
+            val calendar = Await.result(schoolClass.calendars.calendar.runAsync, Duration.Inf)
             val response = calendar.icalString.getBytes(StandardCharsets.UTF_8)
 
             r.discardEntityBytes()
@@ -55,5 +56,7 @@ class ICalServer(config: Config) {
             unknown
         })
       }).run()
+
+    bindingFuture
   }
 }

@@ -1,7 +1,6 @@
 package org.lolhens.untisicalserver.data.config
 
-import org.lolhens.untisicalserver.ical.{CalendarCache, CalendarProvider}
-import monix.execution.Scheduler.Implicits.global
+import org.lolhens.untisicalserver.ical.CalendarCache
 
 import scala.concurrent.duration._
 

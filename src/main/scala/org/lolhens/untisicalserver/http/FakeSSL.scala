@@ -2,6 +2,7 @@ package org.lolhens.untisicalserver.http
 
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
+
 import javax.net.ssl._
 
 /**

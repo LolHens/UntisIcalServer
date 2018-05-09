@@ -1,7 +1,6 @@
 package org.lolhens.untisicalserver.data.config
 
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
 
 import scala.concurrent.duration._
@@ -19,7 +18,4 @@ case class School(id: String,
     Observable.timerRepeated(0.seconds, interval, ())
       .mapParallelUnordered(1)(_ => updateCache)
       .completedL
-
-  def runUpdateCacheContinuously(interval: FiniteDuration): Unit =
-    updateCacheContinuously(interval).runAsync
 }
