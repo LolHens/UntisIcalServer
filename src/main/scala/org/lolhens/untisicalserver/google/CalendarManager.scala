@@ -92,7 +92,7 @@ case class CalendarManager(calendarService: CalendarService) {
     val firstPageToken: String = null
 
     eventsRec(firstPageToken)
-      .timeout(20000.seconds)
+      .timeout(15.seconds)
   }
 
   def listEvents(calendar: CalendarListEntry,

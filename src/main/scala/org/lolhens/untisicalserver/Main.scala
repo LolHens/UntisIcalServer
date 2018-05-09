@@ -34,7 +34,7 @@ object Main {
     val iCalServer = new ICalServer(config)
     val err1 = iCalServer.start
 
-    val err2 = Google.updateCalendarContinuously(30000.seconds)
+    val err2 = Google.updateCalendarContinuously(30.seconds)
 
     Await.result((for {
       err0Fibre <- err0.executeOn(newScheduler).fork
