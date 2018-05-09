@@ -32,7 +32,7 @@ object Google {
     } yield
       calendarManager.updateWeek(calendarEntry, week, events)
   }
-    .mapParallelUnordered(16)(_.map{e => println("updated calendar"); e})
+    .mapParallelUnordered(16)(_.map{e => println("g: updated calendar"); e})
     .completedL
 
   def updateCalendarContinuously(interval: FiniteDuration): Task[Unit] =

@@ -18,13 +18,13 @@ case class WeekOfYear(year: Int, week: Int) {
       .`with`(weekFields.weekOfYear(), 1)
       .`with`(weekFields.dayOfWeek(), 1)
 
-  lazy val localDateMin: LocalDate =
+  lazy val startDate: LocalDate =
     firstDayOfYear
       .plusWeeks(week - 1)
 
-  lazy val localDateMax: LocalDate = localDateMin.plusWeeks(1)
+  lazy val endDate: LocalDate = startDate.plusWeeks(1)
 
-  def +(weeks: Int): WeekOfYear = WeekOfYear(localDateMin.plusWeeks(weeks))
+  def +(weeks: Int): WeekOfYear = WeekOfYear(startDate.plusWeeks(weeks))
 
   def -(weeks: Int): WeekOfYear = this + -weeks
 }
@@ -48,7 +48,7 @@ object WeekOfYear {
     def toList: List[WeekOfYear] = {
       @tailrec
       def rec(week: WeekOfYear, weeks: List[WeekOfYear] = Nil): List[WeekOfYear] =
-        if (week.localDateMin.isAfter(end.localDateMin)) weeks
+        if (week.startDate.isAfter(end.startDate)) weeks
         else rec(week + 1, week +: weeks)
 
       rec(start)

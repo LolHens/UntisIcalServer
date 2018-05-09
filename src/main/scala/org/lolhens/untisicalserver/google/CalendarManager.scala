@@ -18,6 +18,7 @@ import org.lolhens.untisicalserver.util.Utils._
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 case class CalendarManager(calendarService: CalendarService) {
@@ -57,13 +58,50 @@ case class CalendarManager(calendarService: CalendarService) {
     getEventsRec()
   }
 
+  def listEvents2(calendar: CalendarListEntry,
+                  min: LocalDateTime = null,
+                  max: LocalDateTime = null): Task[List[GEvent]] = {
+    def pageEvents(pageToken: String): Task[(Option[String], List[GEvent])] =
+      for {
+        events <- Task {
+          calendarService
+            .events()
+            .list(calendar.getId)
+            .setTimeMin(min.toGoogleDateTime)
+            .setTimeMax(max.toGoogleDateTime)
+            .setPageToken(pageToken)
+            .setSingleEvents(true) // TODO
+            .execute()
+        }.timeout(5.seconds)
+        nextPageToken = Option(events.getNextPageToken)
+        eventsList = events.getItems.asScala.toList
+      } yield
+        nextPageToken -> eventsList
+
+    def eventsRec(pageToken: String): Task[List[GEvent]] =
+      for {
+        (nextPageToken, events) <- pageEvents(pageToken)
+        _ = if (nextPageToken.nonEmpty) {
+          println(pageToken + " -> " + nextPageToken)
+          println(events)
+        }
+        nextEvents <- nextPageToken.map(eventsRec).getOrElse(Task.now(Nil))
+      } yield
+        events ++ nextEvents
+
+    val firstPageToken: String = null
+
+    eventsRec(firstPageToken)
+      .timeout(20000.seconds)
+  }
+
   def listEvents(calendar: CalendarListEntry,
                  date: LocalDate): Task[List[GEvent]] =
-    listEvents(calendar, date.dayStart, date.dayStart.plusDays(1))
+    listEvents2(calendar, date.dayStart, date.dayStart.plusDays(1))
 
   def listEvents(calendar: CalendarListEntry,
                  week: WeekOfYear): Task[List[GEvent]] =
-    listEvents(calendar, week.localDateMin.dayStart, week.localDateMax.dayStart)
+    listEvents2(calendar, week.startDate.dayStart, week.endDate.dayStart)
 
   private def openBatch(batch: BatchRequest): BatchRequest = Option(batch).getOrElse {
     val batch = new BatchRequest(GoogleNetHttpTransport.newTrustedTransport(),
@@ -225,23 +263,28 @@ case class CalendarManager(calendarService: CalendarService) {
                  week: WeekOfYear,
                  events: List[GEvent])
                 (implicit batch: BatchRequest = null): Task[Unit] = batched { batch =>
+    println(week.startDate + " new: " + events.toString.replaceAll("\\n|\\r\\n", ""))
     for {
-      oldEvents <- listEvents(calendar, week)
+      oldEvents <- listEvents(calendar, week).onErrorHandleWith { err =>
+        err.printStackTrace()
+        Task.raiseError(err)
+      }
+      _ = println(week.startDate + " old: " + oldEvents)
       _ <- updateEvents(calendar, oldEvents, filter(events, week))
     } yield ()
   }
 
-  def updateWeek2(calendar: CalendarListEntry,
-                  week: WeekOfYear,
-                  events: List[GEvent])
-                 (implicit batch: BatchRequest = null): Task[Unit] = batched { batch =>
+  def readdWeek(calendar: CalendarListEntry,
+                week: WeekOfYear,
+                events: List[GEvent])
+               (implicit batch: BatchRequest = null): Task[Unit] = batched { batch =>
     for {
       oldEvents <- listEvents(calendar, week)
       _ <- removeEvents(calendar, oldEvents)
       _ <- addEvents(calendar, filter(events, week))
 
       //newEvents <- listEvents(calendar, week)
-      _ = println(s"week $week ${week.localDateMin}: removed ${oldEvents.size} events; adding ${events.size}")
+      _ = println(s"week $week ${week.startDate}: removed ${oldEvents.size} events; adding ${events.size}")
     } yield ()
   }
 }
@@ -268,5 +311,5 @@ object CalendarManager {
     filter(events, date.dayStart, date.dayStart.plusDays(1))
 
   def filter(events: List[GEvent], week: WeekOfYear): List[GEvent] =
-    filter(events, week.localDateMin.dayStart, week.localDateMax.dayStart)
+    filter(events, week.startDate.dayStart, week.endDate.dayStart)
 }

@@ -31,7 +31,7 @@ object CalendarRequester {
 
   def request(schoolClass: SchoolClass,
               week: WeekOfYear): Task[Calendar] = {
-    val url = iCalUrl(schoolClass, week.localDateMin)
+    val url = iCalUrl(schoolClass, week.startDate)
 
     val calendar = stringReceiver.receive(url)
       .flatMap(icalString =>
