@@ -13,11 +13,10 @@ object Google {
 
   //Utils.setLogLevel
 
-  val calendar: Task[CalendarListEntry] =
-    for {
-      calendars <- calendarManager.listCalendars()
-    } yield
-      calendars.find(e => CalendarManager.calendarName(e) == "FS-15B Stundenplan").get
+  val calendarEntryTask: Task[CalendarListEntry] =
+    (for (calendars <- calendarManager.listCalendars()) yield
+      calendars.find(e => CalendarManager.calendarName(e) == "FS-15B Stundenplan").get)
+      .memoize
 
   lazy val schools: List[School] = Config.load.schools
 
@@ -25,15 +24,15 @@ object Google {
 
   val updateCalendar: Task[Unit] = {
     for {
-      calendarFibre <- Observable.fromTask(calendar.fork)
+      calendarEntry <- Observable.fromTask(calendarEntryTask)
+      _ = println("g: aquired calendar")
       calendars <- Observable.fromTask(schoolClass.calendars.calendars)
-      (week, cal) <- Observable.fromIterable(calendars.toSeq)
-      events = cal.events.map(_.toGEvent)
-      calendar <- Observable.fromTask(calendarFibre.join)
+      (week, calendar) <- Observable.fromIterable(calendars.toSeq)
+      events = calendar.events.map(_.toGEvent)
     } yield
-      calendarManager.updateWeek(calendar, week, events)
+      calendarManager.updateWeek(calendarEntry, week, events)
   }
-    .mapParallelUnordered(16)(identity)
+    .mapParallelUnordered(16)(_.map{e => println("updated calendar"); e})
     .completedL
 
   def updateCalendarContinuously(interval: FiniteDuration): Task[Unit] =

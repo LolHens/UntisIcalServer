@@ -17,7 +17,7 @@ class CalendarCache(val schoolClass: SchoolClass,
   val updateCache: Observable[Map[WeekOfYear, Calendar]] =
     for {
       (week, calendar) <- provider.calendars
-      _ = println(s"CALENDAR OF ${schoolClass.name} FOR WEEK $week")
+      //_ = println(s"CALENDAR OF ${schoolClass.name} FOR WEEK $week")
     } yield calendarCache.transformAndGet { cache =>
       cache.updated(week, calendar)
     }
