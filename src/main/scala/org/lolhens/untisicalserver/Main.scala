@@ -36,14 +36,13 @@ object Main {
 
     val err2 = Google.updateCalendarContinuously(30.seconds)
 
-    Await.result((for {
-      err0Fibre <- err0.executeOn(newScheduler).fork
-      err1Fibre <- err1.executeOn(newScheduler).fork
-      err2Fibre <- err2.executeOn(newScheduler).fork
-      err0 <- err0Fibre.join
-      err1 <- err1Fibre.join
-      err2 <- err2Fibre.join
-    } yield ()).runAsync, Duration.Inf)
+    Await.result(Task.gatherUnordered(Seq(
+      err0.executeOn(newScheduler).doOnFinish(_ => Task(println("tast0 ended"))),
+      err1.executeOn(newScheduler).doOnFinish(_ => Task(println("tast1 ended"))),
+      err2.executeOn(newScheduler).doOnFinish(_ => Task(println("tast2 ended")))
+    )).runAsync, Duration.Inf)
+
+    println("ended")
   }
 }
 

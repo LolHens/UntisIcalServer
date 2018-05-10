@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri, _}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import monix.eval.Task
+import monix.execution.Cancelable
 import org.lolhens.untisicalserver.data.config.Config
 
 import scala.concurrent.duration.Duration
@@ -18,7 +19,7 @@ import scala.concurrent.{Await, Future}
   * Created by pierr on 31.08.2016.
   */
 class ICalServer(config: Config) {
-  val start: Task[Http.ServerBinding] = Task.deferFutureAction { implicit scheduler =>
+  val start: Task[Unit] = Task.deferFutureAction { implicit scheduler =>
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
@@ -57,6 +58,8 @@ class ICalServer(config: Config) {
         })
       }).run()
 
-    bindingFuture
+    Task.fromFuture(bindingFuture).flatMap { binding =>
+      Task.never.doOnCancel(Task.fromFuture(binding.unbind()).map(_ => ()))
+    }.runAsync
   }
 }
