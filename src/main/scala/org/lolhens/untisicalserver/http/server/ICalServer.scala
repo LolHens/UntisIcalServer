@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri, _}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import monix.eval.Task
-import monix.execution.Cancelable
 import org.lolhens.untisicalserver.data.config.Config
 
 import scala.concurrent.duration.Duration

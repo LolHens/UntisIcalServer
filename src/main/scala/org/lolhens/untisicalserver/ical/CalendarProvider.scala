@@ -5,7 +5,6 @@ import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.config.SchoolClass
 import org.lolhens.untisicalserver.data.{Calendar, Event}
 import org.lolhens.untisicalserver.ical.WeekOfYear.WeekRange
-import org.lolhens.untisicalserver.util.Utils._
 
 import scala.concurrent.duration._
 import scala.language.postfixOps

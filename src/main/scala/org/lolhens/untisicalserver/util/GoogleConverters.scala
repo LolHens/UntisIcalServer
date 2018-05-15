@@ -1,6 +1,6 @@
 package org.lolhens.untisicalserver.util
 
-import java.time.{LocalDateTime, ZoneOffset}
+import java.time._
 import java.util.{Date, TimeZone}
 
 import com.google.api.client.util.DateTime
@@ -8,12 +8,10 @@ import com.google.api.services.calendar.model.EventDateTime
 
 object GoogleConverters {
 
-  implicit class RichDateTime(val dateTime: DateTime) extends AnyVal {
-    def toLocalDateTime: LocalDateTime = LocalDateTime.ofEpochSecond(
-      dateTime.getValue / 1000,
-      (dateTime.getValue % 1000).toInt * 1000,
-      ZoneOffset.ofHoursMinutes(dateTime.getTimeZoneShift / 60, dateTime.getTimeZoneShift % 60)
-    )
+  implicit class GoogleDateTimeOs(val dateTime: DateTime) extends AnyVal {
+    def toDateTime: OffsetDateTime =
+      Instant.ofEpochMilli(dateTime.getValue)
+        .atOffset(ZoneOffset.ofTotalSeconds(dateTime.getTimeZoneShift * 60))
 
     def toEventDateTime: EventDateTime = {
       val eventDateTime = new EventDateTime()
@@ -22,19 +20,16 @@ object GoogleConverters {
     }
   }
 
-  implicit class RichEventDateTime(val eventDateTime: EventDateTime) extends AnyVal {
+  implicit class EventDateTimeOps(val eventDateTime: EventDateTime) extends AnyVal {
     def toGoogleDateTime: DateTime = Option(eventDateTime.getDateTime).getOrElse(eventDateTime.getDate)
 
-    def toLocalDateTime: LocalDateTime = toGoogleDateTime.toLocalDateTime
+    def toDateTime: OffsetDateTime = toGoogleDateTime.toDateTime
   }
 
-  implicit class RichGoogleLocalDateTime(val localDateTime: LocalDateTime) extends AnyVal {
+  implicit class GoogleOffsetDateTimeOps(val dateTime: OffsetDateTime) extends AnyVal {
     def toGoogleDateTime: DateTime =
-      if (localDateTime == null) null
-      else {
-        val offset = Utils.zoneOffset
-        new DateTime(Date.from(localDateTime.toInstant(offset)), TimeZone.getTimeZone(offset))
-      }
+      if (dateTime == null) null
+      else new DateTime(Date.from(dateTime.toInstant), TimeZone.getTimeZone(dateTime.getOffset))
   }
 
 }

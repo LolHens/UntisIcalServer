@@ -10,16 +10,19 @@ import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
 import scala.concurrent.duration._
 
 object Google {
-  lazy val calendarManager = CalendarManager(
+  lazy val calendarManagerTask: Task[CalendarManager] = Task(CalendarManager(
     Authorize.getCalendarService("UntisIcalServer", readonly = false).get
-  )
+  )).memoizeOnSuccess
 
   //Utils.setLogLevel
 
   val calendarEntryTask: Task[CalendarListEntry] =
-    calendarManager.listCalendars()
-      .map(_.apply("FS-15B Stundenplan"))
-      .memoize
+    (for {
+      calendarManager <- calendarManagerTask
+      calendars <- calendarManager.listCalendars()
+      calendar = calendars("FS-15B Stundenplan")
+    } yield calendar)
+      .memoizeOnSuccess
 
   lazy val schools: List[School] = Config.load.schools
 
@@ -27,6 +30,7 @@ object Google {
 
   val updateCalendar: Task[Unit] = {
     for {
+      calendarManager <- Observable.fromTask(calendarManagerTask)
       calendarEntry <- Observable.fromTask(calendarEntryTask)
       calendars <- Observable.fromTask(schoolClass.calendars.calendars)
       _ = println(s"Updating calendar ${calendarEntry.name}")

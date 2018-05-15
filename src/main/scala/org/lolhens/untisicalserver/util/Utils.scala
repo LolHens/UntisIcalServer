@@ -1,10 +1,8 @@
 package org.lolhens.untisicalserver.util
 
 import java.time._
-import java.util.Date
 
 import ch.qos.logback.classic.{Level, Logger}
-import monix.eval.Task
 import net.fortuna.ical4j.model.component.{CalendarComponent, VEvent}
 import net.fortuna.ical4j.model.{Calendar, Component, ComponentList, Property}
 import org.slf4j.LoggerFactory
@@ -23,23 +21,17 @@ object Utils {
     componentList
   }
 
-  implicit val localDateTimeOrdering: Ordering[LocalDateTime] = Ordering.fromLessThan(_ isBefore _)
+  implicit val offsetDateTimeOrdering: Ordering[OffsetDateTime] = Ordering.fromLessThan(_ isBefore _)
 
-  private[util] def zoneOffset: ZoneOffset = OffsetDateTime.now().getOffset
+  def zoneOffset: ZoneOffset = OffsetDateTime.now().getOffset
 
-  implicit class RichDate(val date: Date) extends AnyVal {
-    def toLocalDateTime: LocalDateTime = LocalDateTime.ofInstant(date.toInstant, ZoneId.systemDefault)
+  implicit class LocalDateOps(val date: LocalDate) extends AnyVal {
+    def dayStart: OffsetDateTime = OffsetDateTime.of(date, LocalTime.MIDNIGHT, ZoneOffset.UTC)
+
+    def dayEnd: OffsetDateTime = dayStart.plusDays(1)
   }
 
-  implicit class RichLocalDateTime(val localDateTime: LocalDateTime) extends AnyVal {
-    def toDate: Date = Date.from(localDateTime.toInstant(zoneOffset))
-  }
-
-  implicit class RichLocalDate(val localDate: LocalDate) extends AnyVal {
-    def dayStart: LocalDateTime = LocalDateTime.of(localDate, LocalTime.MIDNIGHT)
-  }
-
-  implicit class RichCalendar(val calendar: Calendar) extends AnyVal {
+  implicit class CalendarOps(val calendar: Calendar) extends AnyVal {
     def setComponents(components: List[CalendarComponent]): Unit = {
       calendar.getComponents.clear()
       calendar.getComponents.addAll(components.asJava)
@@ -50,7 +42,7 @@ object Utils {
     }
   }
 
-  implicit class RichCalendarComponent(val component: CalendarComponent) extends AnyVal {
+  implicit class CalendarComponentOps(val component: CalendarComponent) extends AnyVal {
     def removeProperty(name: String): Unit =
       component.getProperties().removeIf((t: Property) => t.getName.equalsIgnoreCase(name))
 
@@ -58,12 +50,12 @@ object Utils {
       component.getProperties.add(property)
   }
 
-  private lazy val parallelism = Runtime.getRuntime.availableProcessors() + 2
+  //private lazy val parallelism = Runtime.getRuntime.availableProcessors() + 2
 
-  def parallel[T](tasks: List[Task[T]], unordered: Boolean = false): Task[List[T]] = Task.sequence {
+  /*def parallel[T](tasks: List[Task[T]], unordered: Boolean = false): Task[List[T]] = Task.sequence {
     tasks.sliding(parallelism, parallelism).map(e =>
       if (unordered) Task.gatherUnordered(e)
       else Task.gather(e)
     )
-  }.map(_.toList.flatten)
+  }.map(_.toList.flatten)*/
 }

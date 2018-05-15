@@ -62,8 +62,8 @@ case class CalendarManager(calendarService: CalendarService) {
     }
 
   private def listAllEvents(calendar: CalendarId,
-                            min: LocalDateTime = null,
-                            max: LocalDateTime = null,
+                            min: OffsetDateTime = null,
+                            max: OffsetDateTime = null,
                             showDeleted: Boolean): Observable[GEvent] = {
     def pageEvents(pageToken: String): Task[(Option[String], List[GEvent])] =
       for {
@@ -102,16 +102,19 @@ case class CalendarManager(calendarService: CalendarService) {
   }
 
   def listEvents(calendar: CalendarId,
-                 min: LocalDateTime = null,
-                 max: LocalDateTime = null): Observable[GEvent] =
-    listAllEvents(calendar, min, max, showDeleted = false) //.filter(_.getStatus != "cancelled")
+                 min: OffsetDateTime = null,
+                 max: OffsetDateTime = null): Observable[GEvent] =
+    listAllEvents(calendar, min, max, showDeleted = false).filter(_.getStatus != "cancelled")
 
   def listDeletedEvents(calendar: CalendarId,
-                        min: LocalDateTime,
-                        max: LocalDateTime): Observable[GEvent] =
+                        min: OffsetDateTime,
+                        max: OffsetDateTime): Observable[GEvent] =
     listAllEvents(calendar, min, max, showDeleted = true).filter(e =>
       e.getStatus == "cancelled" &&
-        e.getEnd.getDate.toString != "2000-01-02"
+        !Option(e.getEnd)
+          .flatMap(e => Option(e.getDate))
+          .map(_.toString)
+          .contains("2000-01-02")
     )
 
   def listEvents(calendar: CalendarId,
@@ -158,8 +161,8 @@ case class CalendarManager(calendarService: CalendarService) {
   }
 
   def purgeCalendar(calendar: CalendarId,
-                    min: LocalDateTime = null,
-                    max: LocalDateTime = null): Task[Unit] =
+                    min: OffsetDateTime = null,
+                    max: OffsetDateTime = null): Task[Unit] =
     purgeEvents(calendar, listDeletedEvents(calendar, min, max))
 
   def purgeCalendar(calendar: CalendarId, week: WeekOfYear): Task[Unit] =
@@ -190,13 +193,13 @@ case class CalendarManager(calendarService: CalendarService) {
     else Task.now()
   }
 
-  private def batched(f: BatchRequest => Task[Unit])
-                     (implicit batch: BatchRequest): Task[Unit] = {
+  private def batched[T](f: BatchRequest => Task[T])
+                        (implicit batch: BatchRequest): Task[T] = {
     val openedBatch = openBatch(batch)
     for {
-      _ <- f(openedBatch)
+      r <- f(openedBatch)
       _ <- closeBatch(openedBatch, batch)
-    } yield ()
+    } yield r
   }
 
   private def batchRequest[T](request: AbstractGoogleJsonClientRequest[T])
@@ -267,14 +270,20 @@ case class CalendarManager(calendarService: CalendarService) {
 
     case class KeepOld(oldEvent: GEvent) extends UpdateEventResult {
       override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events.filterNot(_ == oldEvent)
+
+      override def toString: String = s"KeepOld(${Event.fromGEvent(oldEvent).line})"
     }
 
     case class Replace(oldEvent: GEvent, newEvent: GEvent) extends UpdateEventResult {
       override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events.filterNot(_ == oldEvent)
+
+      override def toString: String = s"KeepOld(${Event.fromGEvent(oldEvent).line},${Event.fromGEvent(newEvent).line})"
     }
 
     case class AddNew(newEvent: GEvent) extends UpdateEventResult {
       override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events
+
+      override def toString: String = s"KeepOld(${Event.fromGEvent(newEvent).line})"
     }
 
   }
@@ -283,17 +292,18 @@ case class CalendarManager(calendarService: CalendarService) {
                               event: GEvent): UpdateEventResult = {
     val newEvent = Event.fromGEvent(event)
 
-    def _keepOld = oldEvents.find { oldEvent =>
+    def _keepOld: Option[UpdateEventResult] = oldEvents.find { oldEvent =>
       Event.fromGEvent(oldEvent) == newEvent
     }.map(UpdateEventResult.KeepOld(_))
 
-    def _replace = oldEvents.find { oldEvent =>
-      oldEvent.getStart.toLocalDateTime == event.getStart.toLocalDateTime &&
-        oldEvent.getEnd.toLocalDateTime == event.getEnd.toLocalDateTime
+    def _replace: Option[UpdateEventResult] = oldEvents.find { oldEvent =>
+      oldEvent.getStart.toDateTime == event.getStart.toDateTime &&
+        oldEvent.getEnd.toDateTime == event.getEnd.toDateTime
     }.map(UpdateEventResult.Replace(_, event))
 
 
-    def _addNew = _keepOld.orElse(_replace).getOrElse(UpdateEventResult.AddNew(event))
+    def _addNew: UpdateEventResult =
+      _keepOld.orElse(_replace).getOrElse(UpdateEventResult.AddNew(event))
 
     _addNew
   }
@@ -302,12 +312,17 @@ case class CalendarManager(calendarService: CalendarService) {
                    oldEvents: List[GEvent],
                    newEvents: List[GEvent])
                   (implicit batch: BatchRequest = null): Task[Unit] =
-    batched(implicit batch => Task {
-      val eventUpdates =
+    batched { implicit batch =>
+      val eventUpdates: Observable[UpdateEventResult] =
         Observable.fromIterable(newEvents)
           .mapTask(newEvent => Task(findEventUpdate(oldEvents, newEvent)))
 
       for {
+        /*e <- eventUpdates.toListL
+        _ = if (e.exists(u => !u.isInstanceOf[UpdateEventResult.KeepOld])) {
+          println(e.mkString("\n"))
+          println(oldEvents.map(Event.fromGEvent).map(_.line).mkString("\n"))
+        }*/
         keep <- eventUpdates.mapTask[Option[GEvent]] {
           case UpdateEventResult.KeepOld(oldEvent) =>
             Task.now(Some(oldEvent))
@@ -331,7 +346,7 @@ case class CalendarManager(calendarService: CalendarService) {
 
         _ <- removeEvents(calendar, remove)
       } yield ()
-    })
+    }
 
   def updateDay(calendar: CalendarId,
                 date: LocalDate,
@@ -352,7 +367,9 @@ case class CalendarManager(calendarService: CalendarService) {
       for {
         _ <- purgeCalendar(calendar)
         //_ = println("Updating " + calendar.name + " " + week.startDate)
+        //_ = println(events.toString().replace("\n", ""))
         oldEvents <- listEvents(calendar, week).toListL
+        //_ = println(oldEvents)
         _ <- updateEvents(calendar, oldEvents, filter(events, week))
       } yield ()
     }
@@ -379,9 +396,9 @@ object CalendarManager {
     override def onSuccess(t: T, responseHeaders: HttpHeaders): Unit = ()
   }
 
-  def filter(events: List[GEvent], min: LocalDateTime, max: LocalDateTime): List[GEvent] =
+  def filter(events: List[GEvent], min: OffsetDateTime, max: OffsetDateTime): List[GEvent] =
     events.filter { event =>
-      val start = Option(event.getStart.getDateTime).getOrElse(event.getStart.getDate).toLocalDateTime
+      val start = Option(event.getStart.getDateTime).getOrElse(event.getStart.getDate).toDateTime
       (min == null || start.isEqual(min) || start.isAfter(min)) &&
         (max == null || start.isEqual(max) || start.isBefore(max))
     }
@@ -396,7 +413,7 @@ object CalendarManager {
 
   object CalendarId {
 
-    implicit class CalendarOps(val calendar: Calendar) extends AnyVal {
+    implicit class CalendarIdOps(val calendar: Calendar) extends AnyVal {
       def id: CalendarId = CalendarId(calendar.getId)(name)
 
       def name: String = calendar.getSummary
