@@ -11,7 +11,8 @@ import com.google.api.client.googleapis.services.json.AbstractGoogleJsonClientRe
 import com.google.api.client.http.{HttpHeaders, HttpRequestInitializer}
 import com.google.api.services.calendar.model.{Calendar, CalendarListEntry, Event => GEvent}
 import com.google.api.services.calendar.{Calendar => CalendarService}
-import monix.eval.{Task, TaskCircuitBreaker}
+import monix.eval.Task
+import monix.execution.atomic.Atomic
 import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.Event
 import org.lolhens.untisicalserver.google.CalendarManager.CalendarId._
@@ -126,7 +127,7 @@ case class CalendarManager(calendarService: CalendarService) {
     listEvents(calendar, week.startDate.dayStart, week.endDate.dayStart)
 
   def moveEvent(calendar: CalendarId, event: GEvent, destination: CalendarId)
-               (implicit batch: BatchRequest = null): Task[Unit] = batchRequest {
+               (implicit batch: Batch = null): Task[Unit] = batchRequest {
     calendarService
       .events()
       .move(calendar.id, event.getId, destination.id)
@@ -168,79 +169,52 @@ case class CalendarManager(calendarService: CalendarService) {
   def purgeCalendar(calendar: CalendarId, week: WeekOfYear): Task[Unit] =
     purgeCalendar(calendar, week.startDate.dayStart, week.endDate.dayStart)
 
-  private def openBatch(batch: BatchRequest): BatchRequest = Option(batch).getOrElse {
-    new BatchRequest(
-      GoogleNetHttpTransport.newTrustedTransport(),
-      calendarService.getGoogleClientRequestInitializer.asInstanceOf[HttpRequestInitializer]
-    )
-  }
 
-  val circuitBreaker: Task[TaskCircuitBreaker] = TaskCircuitBreaker(
-    maxFailures = 2,
-    resetTimeout = 10.seconds
-  )
-
-  private def closeBatch(openedBatch: BatchRequest, batch: BatchRequest): Task[Unit] = {
-    if (batch == null && openedBatch.size() > 0)
-      (for {
-        //ci <- circuitBreaker
-        r <- Task(openedBatch.execute())
-      } yield r)
-        .onErrorRestartLoop(3) { (err, maxRetries, retry) =>
-          if (maxRetries > 0) retry(maxRetries - 1).delayExecution(5.second)
-          else Task.raiseError(err)
-        }
-    else Task.now()
-  }
-
-  private def batched[T](f: BatchRequest => Task[T])
-                        (implicit batch: BatchRequest): Task[T] = {
-    val openedBatch = openBatch(batch)
-    for {
-      r <- f(openedBatch)
-      _ <- closeBatch(openedBatch, batch)
-    } yield r
+  private def batched[T](f: Batch => Task[T])
+                        (implicit batch: Batch): Task[T] = {
+    Option(batch).map(f).getOrElse {
+      val batch = new Batch(calendarService)
+      for {
+        r <- f(batch)
+        _ <- batch.execute
+      } yield r
+    }
   }
 
   private def batchRequest[T](request: AbstractGoogleJsonClientRequest[T])
-                             (implicit batch: BatchRequest): Task[Unit] =
-    batched { batch =>
-      for {
-        //ci <- circuitBreaker
-        r <- Task(request.queue(batch, emptyCallback))
-      } yield r
-    }
+                             (implicit batch: Batch): Task[Unit] =
+    batched(_.queue(request))
 
   def clear(calendar: CalendarId)
-           (implicit batch: BatchRequest = null): Task[Unit] = batchRequest {
+           (implicit batch: Batch = null): Task[Unit] = batchRequest {
     calendarService
       .calendars()
       .clear(calendar.id)
   }
 
   def removeEvent(calendar: CalendarId, event: GEvent)
-                 (implicit batch: BatchRequest = null): Task[Unit] = batchRequest {
+                 (implicit batch: Batch = null): Task[Unit] = batchRequest {
     calendarService
       .events()
       .delete(calendar.id, event.getId)
   }
 
   def removeEvents(calendar: CalendarId, events: List[GEvent])
-                  (implicit batch: BatchRequest = null): Task[Unit] =
+                  (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
       Task.gather(events.map(removeEvent(calendar, _)))
         .map(_ => ())
     }
 
   def addEvent(calendar: CalendarId, event: GEvent)
-              (implicit batch: BatchRequest = null): Task[Unit] = batchRequest {
+              (implicit batch: Batch = null): Task[Unit] = batchRequest {
     calendarService
       .events()
       .insert(calendar.id, event)
   }
 
   def addEvents(calendar: CalendarId, events: List[GEvent])
-               (implicit batch: BatchRequest = null): Task[Unit] =
+               (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
       Task.gather(events.map(addEvent(calendar, _)))
         .map(_ => ())
@@ -249,44 +223,19 @@ case class CalendarManager(calendarService: CalendarService) {
   def patchEvent(calendar: CalendarId,
                  oldEvent: GEvent,
                  newEvent: GEvent)
-                (implicit batch: BatchRequest = null): Task[Unit] = batchRequest {
+                (implicit batch: Batch = null): Task[Unit] = batchRequest {
     calendarService
       .events()
       .update(calendar.id, oldEvent.getId, newEvent)
   }
 
   def patchEvents(calendar: CalendarId, events: Map[GEvent, GEvent])
-                 (implicit batch: BatchRequest = null): Task[Unit] =
+                 (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
       Task.gather(events.map(e => patchEvent(calendar, e._1, e._2)))
         .map(_ => ())
     }
 
-  private abstract class UpdateEventResult {
-    def remainingOldEvents(events: List[GEvent]): List[GEvent]
-  }
-
-  private object UpdateEventResult {
-
-    case class KeepOld(oldEvent: GEvent) extends UpdateEventResult {
-      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events.filterNot(_ == oldEvent)
-
-      override def toString: String = s"KeepOld(${Event.fromGEvent(oldEvent).line})"
-    }
-
-    case class Replace(oldEvent: GEvent, newEvent: GEvent) extends UpdateEventResult {
-      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events.filterNot(_ == oldEvent)
-
-      override def toString: String = s"KeepOld(${Event.fromGEvent(oldEvent).line},${Event.fromGEvent(newEvent).line})"
-    }
-
-    case class AddNew(newEvent: GEvent) extends UpdateEventResult {
-      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events
-
-      override def toString: String = s"KeepOld(${Event.fromGEvent(newEvent).line})"
-    }
-
-  }
 
   private def findEventUpdate(oldEvents: List[GEvent],
                               event: GEvent): UpdateEventResult = {
@@ -311,7 +260,7 @@ case class CalendarManager(calendarService: CalendarService) {
   def updateEvents(calendar: CalendarId,
                    oldEvents: List[GEvent],
                    newEvents: List[GEvent])
-                  (implicit batch: BatchRequest = null): Task[Unit] =
+                  (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
       val eventUpdates: Observable[UpdateEventResult] =
         Observable.fromIterable(newEvents)
@@ -351,7 +300,7 @@ case class CalendarManager(calendarService: CalendarService) {
   def updateDay(calendar: CalendarId,
                 date: LocalDate,
                 events: List[GEvent])
-               (implicit batch: BatchRequest = null): Task[Unit] =
+               (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
       for {
         oldEvents <- listEvents(calendar, date).toListL
@@ -362,7 +311,7 @@ case class CalendarManager(calendarService: CalendarService) {
   def updateWeek(calendar: CalendarId,
                  week: WeekOfYear,
                  events: List[GEvent])
-                (implicit batch: BatchRequest = null): Task[Unit] =
+                (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
       for {
         _ <- purgeCalendar(calendar)
@@ -377,7 +326,7 @@ case class CalendarManager(calendarService: CalendarService) {
   def readdWeek(calendar: CalendarId,
                 week: WeekOfYear,
                 events: List[GEvent])
-               (implicit batch: BatchRequest = null): Task[Unit] =
+               (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
       for {
         oldEvents <- listEvents(calendar, week).toListL
@@ -408,6 +357,63 @@ object CalendarManager {
 
   def filter(events: List[GEvent], week: WeekOfYear): List[GEvent] =
     filter(events, week.startDate.dayStart, week.endDate.dayStart)
+
+  class Batch(calendarService: CalendarService) {
+    private val atomicRequests: Atomic[List[AbstractGoogleJsonClientRequest[_]]] =
+      Atomic(List.empty[AbstractGoogleJsonClientRequest[_]])
+
+    def queue(request: AbstractGoogleJsonClientRequest[_]): Task[Unit] = Task {
+      atomicRequests.transform(request :: _)
+    }
+
+    private def execute(requests: List[AbstractGoogleJsonClientRequest[_]]): Task[Unit] = Task {
+      val batchRequest = new BatchRequest(
+        GoogleNetHttpTransport.newTrustedTransport(),
+        calendarService.getGoogleClientRequestInitializer.asInstanceOf[HttpRequestInitializer]
+      )
+
+      def queue[T](request: AbstractGoogleJsonClientRequest[T]): Unit =
+        request.queue(batchRequest, emptyCallback)
+
+      requests.foreach(queue(_))
+
+      batchRequest.execute()
+    }
+
+    def execute: Task[Unit] =
+      (for {
+        groupedRequests <- Observable.fromTask(Task(atomicRequests.get.reverse.grouped(500)))
+        requests <- Observable.fromIterator(groupedRequests)
+        _ <- Observable.fromTask(execute(requests))
+      } yield ())
+        .completedL
+  }
+
+  private abstract class UpdateEventResult {
+    def remainingOldEvents(events: List[GEvent]): List[GEvent]
+  }
+
+  private object UpdateEventResult {
+
+    case class KeepOld(oldEvent: GEvent) extends UpdateEventResult {
+      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events.filterNot(_ == oldEvent)
+
+      override def toString: String = s"KeepOld(${Event.fromGEvent(oldEvent).line})"
+    }
+
+    case class Replace(oldEvent: GEvent, newEvent: GEvent) extends UpdateEventResult {
+      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events.filterNot(_ == oldEvent)
+
+      override def toString: String = s"KeepOld(${Event.fromGEvent(oldEvent).line},${Event.fromGEvent(newEvent).line})"
+    }
+
+    case class AddNew(newEvent: GEvent) extends UpdateEventResult {
+      override def remainingOldEvents(events: List[GEvent]): List[GEvent] = events
+
+      override def toString: String = s"KeepOld(${Event.fromGEvent(newEvent).line})"
+    }
+
+  }
 
   case class CalendarId(id: String)(val name: String)
 
