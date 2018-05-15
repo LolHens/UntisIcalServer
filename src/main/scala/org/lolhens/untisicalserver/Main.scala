@@ -37,9 +37,9 @@ object Main {
     val err2 = Google.updateCalendarContinuously(30.seconds)
 
     Await.result(Task.gatherUnordered(Seq(
-      err0.executeOn(newScheduler).doOnFinish(_ => Task(println("tast0 ended"))),
-      err1.executeOn(newScheduler).doOnFinish(_ => Task(println("tast1 ended"))),
-      err2.executeOn(newScheduler).doOnFinish(_ => Task(println("tast2 ended")))
+      err0.executeOn(newScheduler).doOnFinish(_ => Task(println("tast0 ended"))).onErrorRestartIf(_ => true),
+      err1.executeOn(newScheduler).doOnFinish(_ => Task(println("tast1 ended"))).onErrorRestartIf(_ => true),
+      err2.executeOn(newScheduler).doOnFinish(_ => Task(println("tast2 ended"))).onErrorRestartIf(_ => true)
     )).runAsync, Duration.Inf)
 
     println("ended")

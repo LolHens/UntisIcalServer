@@ -79,8 +79,8 @@ case class CalendarManager(calendarService: CalendarService) {
             .execute()
         }
           .timeout(30.seconds)
-          .onErrorRestartLoop(5) { (err, maxRetries, retry) =>
-            if (maxRetries > 0) retry(maxRetries - 1).delayExecution(5.second)
+          .onErrorRestartLoop(3) { (err, maxRetries, retry) =>
+            if (maxRetries > 0) retry(maxRetries - 1).delayExecution(2.second)
             else Task.raiseError(err)
           }
         nextPageToken = Option(events.getNextPageToken)
@@ -109,7 +109,10 @@ case class CalendarManager(calendarService: CalendarService) {
   def listDeletedEvents(calendar: CalendarId,
                         min: LocalDateTime,
                         max: LocalDateTime): Observable[GEvent] =
-    listAllEvents(calendar, min, max, showDeleted = true).filter(_.getStatus == "cancelled")
+    listAllEvents(calendar, min, max, showDeleted = true).filter(e =>
+      e.getStatus == "cancelled" &&
+        e.getEnd.getDate.toString != "2000-01-02"
+    )
 
   def listEvents(calendar: CalendarId,
                  date: LocalDate): Observable[GEvent] =
@@ -126,24 +129,26 @@ case class CalendarManager(calendarService: CalendarService) {
       .move(calendar.id, event.getId, destination.id)
   }
 
-  def removeEventsCompletely(calendar: CalendarId, events: Observable[GEvent]): Task[Unit] = {
+  def purgeEvents(calendar: CalendarId,
+                  events: Observable[GEvent],
+                  threshold: Int = 10): Task[Unit] = {
     (for {
-      _ <- Observable.fromTask(events.take(10).countL)
-        .filter(size => size >= 10)
-      _ = println("tmp " + calendar.name)
+      _ <- Observable.fromTask(events.take(threshold).countL)
+        .filter(size => size >= threshold)
+      _ = println("purging " + calendar.name)
       _ <- Observable.fromTask {
         createCalendar("(trash)").bracket { tmpCalendar =>
-          events.bufferTumbling(2000).mapParallelUnordered(8) { events =>
+          events.bufferTumbling(1000).mapParallelUnordered(4) { events =>
             batched { implicit batch =>
               for {
                 _ <- Task.sequence(
                   for (event <- events)
                     yield {
-                      println("removing: " + event.toString.replaceAll("[^a-zA-Z0-9 :,;-_#+]", "").take(10000))
+                      println("removing: " + event.toString.replaceAll("\\n|\\r\\n", "").take(1000))
                       moveEvent(calendar, event, tmpCalendar.id)
                     }
                 )
-                _ = println("REMOVED!!!!!!!! " + calendar.name)
+                _ = println("purged " + calendar.name)
               } yield ()
             }(null)
           }.completedL
@@ -155,7 +160,7 @@ case class CalendarManager(calendarService: CalendarService) {
   def purgeCalendar(calendar: CalendarId,
                     min: LocalDateTime = null,
                     max: LocalDateTime = null): Task[Unit] =
-    removeEventsCompletely(calendar, listDeletedEvents(calendar, min, max))
+    purgeEvents(calendar, listDeletedEvents(calendar, min, max))
 
   def purgeCalendar(calendar: CalendarId, week: WeekOfYear): Task[Unit] =
     purgeCalendar(calendar, week.startDate.dayStart, week.endDate.dayStart)
@@ -174,8 +179,11 @@ case class CalendarManager(calendarService: CalendarService) {
 
   private def closeBatch(openedBatch: BatchRequest, batch: BatchRequest): Task[Unit] = {
     if (batch == null && openedBatch.size() > 0)
-      Task(openedBatch.execute())
-        .onErrorRestartLoop(5) { (err, maxRetries, retry) =>
+      (for {
+        //ci <- circuitBreaker
+        r <- Task(openedBatch.execute())
+      } yield r)
+        .onErrorRestartLoop(3) { (err, maxRetries, retry) =>
           if (maxRetries > 0) retry(maxRetries - 1).delayExecution(5.second)
           else Task.raiseError(err)
         }
@@ -195,8 +203,8 @@ case class CalendarManager(calendarService: CalendarService) {
                              (implicit batch: BatchRequest): Task[Unit] =
     batched { batch =>
       for {
-        ci <- circuitBreaker
-        r <- ci.protect(Task.now(request.queue(batch, emptyCallback)))
+        //ci <- circuitBreaker
+        r <- Task(request.queue(batch, emptyCallback))
       } yield r
     }
 
@@ -295,27 +303,34 @@ case class CalendarManager(calendarService: CalendarService) {
                    newEvents: List[GEvent])
                   (implicit batch: BatchRequest = null): Task[Unit] =
     batched(implicit batch => Task {
-      val eventUpdates = newEvents.map(findEventUpdate(oldEvents, _))
-      val removeOld = eventUpdates.foldLeft(oldEvents) { (lastOldEvents, eventUpdate) =>
-        eventUpdate match {
+      val eventUpdates =
+        Observable.fromIterable(newEvents)
+          .mapTask(newEvent => Task(findEventUpdate(oldEvents, newEvent)))
+
+      for {
+        keep <- eventUpdates.mapTask[Option[GEvent]] {
           case UpdateEventResult.KeepOld(oldEvent) =>
-            //println("keep old")
-            eventUpdate.remainingOldEvents(lastOldEvents)
+            Task.now(Some(oldEvent))
 
           case UpdateEventResult.Replace(oldEvent, newEvent) =>
-            println("replace " + Event.fromGEvent(oldEvent).line + " with " + Event.fromGEvent(newEvent).line)
-            patchEvent(calendar, oldEvent, newEvent)
-            eventUpdate.remainingOldEvents(lastOldEvents)
+            for {
+              _ <- patchEvent(calendar, oldEvent, newEvent)
+              _ = println("replaced " + Event.fromGEvent(oldEvent).line + " with " + Event.fromGEvent(newEvent).line)
+            } yield Some(oldEvent)
 
           case UpdateEventResult.AddNew(newEvent) =>
-            println("add new")
-            addEvent(calendar, newEvent)
-            eventUpdate.remainingOldEvents(lastOldEvents)
-
+            for {
+              _ <- addEvent(calendar, newEvent)
+              _ = println("added new " + Event.fromGEvent(newEvent).line)
+            } yield None
         }
-      }
+          .flatMap(Observable.fromIterable(_))
+          .toListL
 
-      removeEvents(calendar, removeOld)
+        remove = oldEvents diff keep
+
+        _ <- removeEvents(calendar, remove)
+      } yield ()
     })
 
   def updateDay(calendar: CalendarId,
@@ -334,12 +349,10 @@ case class CalendarManager(calendarService: CalendarService) {
                  events: List[GEvent])
                 (implicit batch: BatchRequest = null): Task[Unit] =
     batched { implicit batch =>
-      println(week.startDate + " new: " + events.toString.replaceAll("\\n|\\r\\n", ""))
       for {
         _ <- purgeCalendar(calendar)
-        _ = println("testtesttest " + calendar.name)
+        //_ = println("Updating " + calendar.name + " " + week.startDate)
         oldEvents <- listEvents(calendar, week).toListL
-        //_ = println(week.startDate + " old: " + oldEvents)
         _ <- updateEvents(calendar, oldEvents, filter(events, week))
       } yield ()
     }
@@ -361,7 +374,7 @@ case class CalendarManager(calendarService: CalendarService) {
 object CalendarManager {
   private def emptyCallback[T] = new JsonBatchCallback[T] {
     override def onFailure(e: GoogleJsonError, responseHeaders: HttpHeaders): Unit =
-      println(e.getMessage)
+      println(e.getMessage + " " + e.getErrors.asScala.toList.map(e => e.getMessage + ": " + e.getReason + s" (${e.toPrettyString.replaceAll("\\n|\\r\\n", "")})"))
 
     override def onSuccess(t: T, responseHeaders: HttpHeaders): Unit = ()
   }
