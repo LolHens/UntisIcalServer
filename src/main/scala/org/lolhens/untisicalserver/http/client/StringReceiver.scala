@@ -24,7 +24,7 @@ class StringReceiver(timeout: Duration = defaultTimeout) {
 
   def receive(_url: String): Task[String] = {
     val svc = url(_url)
-    Task.fromFuture(http(svc OK as.String))
+    Task.deferFuture(http(svc OK as.String))
   }
 }
 

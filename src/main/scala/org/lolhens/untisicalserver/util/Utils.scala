@@ -1,6 +1,6 @@
 package org.lolhens.untisicalserver.util
 
-import java.time._
+import java.time.{LocalDate, LocalTime, OffsetDateTime, ZoneOffset}
 
 import ch.qos.logback.classic.{Level, Logger}
 import net.fortuna.ical4j.model.component.{CalendarComponent, VEvent}

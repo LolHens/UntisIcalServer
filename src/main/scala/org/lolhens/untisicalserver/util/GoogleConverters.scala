@@ -1,7 +1,6 @@
 package org.lolhens.untisicalserver.util
 
 import java.time._
-import java.time.temporal.{ChronoField, TemporalField}
 import java.util.{Date, TimeZone}
 
 import com.google.api.client.util.DateTime

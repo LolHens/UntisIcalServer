@@ -1,11 +1,9 @@
 package org.lolhens.untisicalserver
 
-import com.google.api.services.calendar.model.CalendarListEntry
 import monix.eval.Task
 import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.config.{Config, School, SchoolClass}
 import org.lolhens.untisicalserver.google.CalendarManager.CalendarId
-import org.lolhens.untisicalserver.google.CalendarManager.CalendarId._
 import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
 
 import scala.concurrent.duration._
@@ -35,6 +33,7 @@ object Google {
       calendarId <- Observable.fromTask(calendarEntryTask)
       calendars <- Observable.fromTask(schoolClass.calendars.calendars)
       _ = println(s"Updating calendar ${calendarId.name}")
+      //_ = println(calendars)
       _ <- Observable.fromTask(calendarManager.purgeCalendar(calendarId))
       (week, calendar) <- Observable.fromIterable(calendars.toSeq)
       events = calendar.events.map(_.toGEvent)

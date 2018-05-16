@@ -1,6 +1,8 @@
 package org.lolhens.untisicalserver.data.config
 
-import org.lolhens.untisicalserver.ical.CalendarCache
+import monix.eval.Task
+import org.lolhens.untisicalserver.data.Calendar
+import org.lolhens.untisicalserver.ical.{CalendarCache, WeekOfYear}
 
 import scala.concurrent.duration._
 
@@ -13,6 +15,8 @@ case class SchoolClass(id: Int,
   def school: School = _school
 
   val calendars = new CalendarCache(this, 2.minutes)
+
+  val updateCache: Task[Map[WeekOfYear, Calendar]] = calendars.updateCache.lastL
 
   def getTeacherName(name: String): Option[String] =
     school.teachers.get(name.toLowerCase)

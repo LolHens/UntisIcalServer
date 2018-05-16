@@ -1,8 +1,7 @@
 package org.lolhens.untisicalserver.ical
 
-import java.time.LocalDate
 import java.time.temporal.WeekFields
-import java.util.Locale
+import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 
 import org.lolhens.untisicalserver.ical.WeekOfYear._
 
@@ -13,36 +12,33 @@ import scala.annotation.tailrec
   */
 case class WeekOfYear(year: Int, week: Int) {
   private lazy val firstDayOfYear: LocalDate =
-    LocalDate.now()
+    LocalDate.MIN
       .withYear(year)
       .`with`(weekFields.weekOfYear(), 1)
       .`with`(weekFields.dayOfWeek(), 1)
 
-  lazy val startDate: LocalDate =
-    firstDayOfYear
-      .plusWeeks(week - 1)
-
-  lazy val endDate: LocalDate = startDate.plusWeeks(1)
+  def startDate: LocalDate = firstDayOfYear.plusWeeks(week - 1)
+  def midDate: LocalDate = startDate.plusDays(2)
+  def endDate: LocalDate = startDate.plusWeeks(1)
 
   def +(weeks: Int): WeekOfYear = WeekOfYear(startDate.plusWeeks(weeks))
-
   def -(weeks: Int): WeekOfYear = this + -weeks
 }
 
 object WeekOfYear {
   implicit val ordering: Ordering[WeekOfYear] = Ordering.by(week => (week.year, week.week))
 
-  private lazy val weekFields = WeekFields.of(Locale.getDefault())
+  private lazy val weekFields = WeekFields.ISO //WeekFields.of(Locale.getDefault())
 
-  def apply(localDate: LocalDate): WeekOfYear =
-    WeekOfYear(localDate.getYear, localDate.get(weekFields.weekOfYear()))
+  def apply(date: LocalDate): WeekOfYear =
+    WeekOfYear(date.getYear, date.get(weekFields.weekOfYear()))
 
   def apply(year: Int, weekRange: Range): WeekRange = WeekRange(
     WeekOfYear(year, weekRange.start),
     WeekOfYear(year, if (weekRange.isInclusive) weekRange.end else weekRange.end - 1)
   )
 
-  def now: WeekOfYear = WeekOfYear(LocalDate.now())
+  def now: WeekOfYear = WeekOfYear(OffsetDateTime.now(ZoneOffset.UTC).toLocalDate)
 
   case class WeekRange(start: WeekOfYear, end: WeekOfYear) {
     def toList: List[WeekOfYear] = {

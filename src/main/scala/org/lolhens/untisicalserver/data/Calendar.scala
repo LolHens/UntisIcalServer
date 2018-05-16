@@ -26,6 +26,8 @@ case class Calendar(events: List[Event]) {
   def icalString: String = toICalCalendar.toString
 
   def ++(calendar: Calendar): Calendar = Calendar(events ++ calendar.events)
+
+  override def toString: String = "Calendar" + events.map(_.line).mkString("(", ", ", ")")
 }
 
 object Calendar {

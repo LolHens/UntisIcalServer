@@ -19,7 +19,6 @@ import org.lolhens.untisicalserver.google.CalendarManager.CalendarId._
 import org.lolhens.untisicalserver.google.CalendarManager._
 import org.lolhens.untisicalserver.ical.WeekOfYear
 import org.lolhens.untisicalserver.util.GoogleConverters._
-import org.lolhens.untisicalserver.util.Utils
 import org.lolhens.untisicalserver.util.Utils._
 
 import scala.collection.JavaConverters._
@@ -345,9 +344,9 @@ case class CalendarManager(calendarService: CalendarService) {
         oldEvents <- listEvents(calendar, week).toListL
         newEvents = filter(events, week)
         //_ = println(oldEvents)
-        _ = println("new events 1 " + week.startDate + ": " + events.map(event => Event.fromGEvent(event).line).mkString("(", ", ", ")"))
-        _ = println("new events 2 " + week.startDate + ": " + newEvents.map(event => Event.fromGEvent(event).line).mkString("(", ", ", ")"))
-        _ <- updateEvents(calendar, oldEvents, events) // TODO filter!
+        //_ = println("new events 1 " + week.startDate + ": " + events.map(event => Event.fromGEvent(event).line).mkString("(", ", ", ")"))
+        //_ = println("new events 2 " + week.startDate + ": " + newEvents.map(event => Event.fromGEvent(event).line).mkString("(", ", ", ")"))
+        _ <- updateEvents(calendar, oldEvents, newEvents)
       } yield ()
     }
 
