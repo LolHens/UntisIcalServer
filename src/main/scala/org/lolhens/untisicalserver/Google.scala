@@ -4,6 +4,7 @@ import com.google.api.services.calendar.model.CalendarListEntry
 import monix.eval.Task
 import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.config.{Config, School, SchoolClass}
+import org.lolhens.untisicalserver.google.CalendarManager.CalendarId
 import org.lolhens.untisicalserver.google.CalendarManager.CalendarId._
 import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
 
@@ -16,10 +17,10 @@ object Google {
 
   //Utils.setLogLevel
 
-  val calendarEntryTask: Task[CalendarListEntry] =
+  val calendarEntryTask: Task[CalendarId] =
     (for {
       calendarManager <- calendarManagerTask
-      calendars <- calendarManager.listCalendars()
+      calendars <- calendarManager.listCalendars
       calendar = calendars("FS-15B Stundenplan")
     } yield calendar)
       .memoizeOnSuccess
@@ -31,13 +32,14 @@ object Google {
   val updateCalendar: Task[Unit] = {
     for {
       calendarManager <- Observable.fromTask(calendarManagerTask)
-      calendarEntry <- Observable.fromTask(calendarEntryTask)
+      calendarId <- Observable.fromTask(calendarEntryTask)
       calendars <- Observable.fromTask(schoolClass.calendars.calendars)
-      _ = println(s"Updating calendar ${calendarEntry.name}")
+      _ = println(s"Updating calendar ${calendarId.name}")
+      _ <- Observable.fromTask(calendarManager.purgeCalendar(calendarId))
       (week, calendar) <- Observable.fromIterable(calendars.toSeq)
       events = calendar.events.map(_.toGEvent)
     } yield
-      calendarManager.updateWeek(calendarEntry.id, week, events)
+      calendarManager.updateWeek(calendarId, week, events)
   }
     //.mapParallelUnordered(16)(identity)
     .mapTask(identity)

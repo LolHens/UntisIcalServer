@@ -38,11 +38,12 @@ object Main {
 
     def loop[A](task: Task[A], name: String): Task[A] =
       task
-        .doOnFinish(errOption => Task {
+        .doOnFinish{errOption =>
           println(s"$name ended")
           errOption.foreach(_.printStackTrace())
-        })
-        .onErrorRestartIf(_ => true)
+          errOption.map(Task.raiseError).getOrElse(Task.unit)
+  }
+          .onErrorRestartLoop(0) { (_, _, retry) => retry(0).delayExecution(5.seconds)}
 
     Await.result(Task.gatherUnordered(Seq(
       loop(err0.executeOn(newScheduler), "Calendar Fetcher"),

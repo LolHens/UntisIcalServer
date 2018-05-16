@@ -19,6 +19,7 @@ import org.lolhens.untisicalserver.google.CalendarManager.CalendarId._
 import org.lolhens.untisicalserver.google.CalendarManager._
 import org.lolhens.untisicalserver.ical.WeekOfYear
 import org.lolhens.untisicalserver.util.GoogleConverters._
+import org.lolhens.untisicalserver.util.Utils
 import org.lolhens.untisicalserver.util.Utils._
 
 import scala.collection.JavaConverters._
@@ -26,14 +27,14 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 case class CalendarManager(calendarService: CalendarService) {
-  def listCalendars(): Task[Map[String, CalendarListEntry]] = Task {
+  def listCalendars: Task[Map[String, CalendarId]] = Task {
     calendarService
       .calendarList()
       .list()
       .execute()
       .getItems
       .asScala
-      .map(calendar => calendar.name -> calendar)
+      .map(calendar => calendar.name -> calendar.id)
       .toMap
   }
 
@@ -46,11 +47,14 @@ case class CalendarManager(calendarService: CalendarService) {
       .calendars()
       .insert(calendar)
       .execute()
-  }.timeout(10.seconds)
-    .onErrorRestartLoop(5) { (err, maxRetries, retry) =>
-      if (maxRetries > 0) retry(maxRetries - 1).delayExecution(5.second)
-      else Task.raiseError(err)
-    }
+  }
+
+  def getCalendar(calendar: CalendarId): Task[Calendar] = Task {
+    calendarService
+      .calendars()
+      .get(calendar.id)
+      .execute()
+  }
 
   def deleteCalendar(calendar: CalendarId): Task[Unit] = batchRequest {
     calendarService
@@ -133,6 +137,22 @@ case class CalendarManager(calendarService: CalendarService) {
       .move(calendar.id, event.getId, destination.id)
   }
 
+  def withTrashCalendar[T](f: CalendarId => Task[T], delete: Boolean = true): Task[T] = {
+    val trashCalendarName = "(trash)"
+    for {
+      calendars <- listCalendars
+      calendarTask = calendars.get(trashCalendarName).map(Task.now).getOrElse(
+        createCalendar(trashCalendarName).map(_.id)
+      )
+      r <- calendarTask.bracket { calendarId =>
+        f(calendarId)
+      } { calendarId =>
+        if (delete) deleteCalendar(calendarId)
+        else Task.unit
+      }
+    } yield r
+  }
+
   def purgeEvents(calendar: CalendarId,
                   events: Observable[GEvent],
                   threshold: Int = 10): Task[Unit] = {
@@ -140,25 +160,27 @@ case class CalendarManager(calendarService: CalendarService) {
       _ <- Observable.fromTask(events.take(threshold).countL)
         .filter(size => size >= threshold)
       _ = println("purging " + calendar.name)
-      _ <- Observable.fromTask {
-        createCalendar("(trash)").bracket { tmpCalendar =>
-          events.bufferTumbling(1000).mapParallelUnordered(4) { events =>
+      _ <- Observable.fromTask(withTrashCalendar({ tmpCalendarId =>
+        events
+          .bufferTumbling(1000)
+          .mapParallelUnordered(4) { events =>
             batched { implicit batch =>
               for {
                 _ <- Task.sequence(
                   for (event <- events)
                     yield {
-                      println("removing: " + event.toString.replaceAll("\\n|\\r\\n", "").take(1000))
-                      moveEvent(calendar, event, tmpCalendar.id)
+                      //println("removing: " + event.toString.replaceAll("\\n|\\r\\n", "").take(1000))
+                      moveEvent(calendar, event, tmpCalendarId)
                     }
                 )
                 _ = println("purged " + calendar.name)
               } yield ()
             }(null)
-          }.completedL
-        }(tmpCalendar => deleteCalendar(tmpCalendar.id))
-      }
-    } yield ()).completedL
+          }
+          .completedL
+      }, delete = false))
+    } yield ())
+      .completedL
   }
 
   def purgeCalendar(calendar: CalendarId,
@@ -192,17 +214,17 @@ case class CalendarManager(calendarService: CalendarService) {
       .clear(calendar.id)
   }
 
-  def removeEvent(calendar: CalendarId, event: GEvent)
+  def deleteEvent(calendar: CalendarId, event: GEvent)
                  (implicit batch: Batch = null): Task[Unit] = batchRequest {
     calendarService
       .events()
       .delete(calendar.id, event.getId)
   }
 
-  def removeEvents(calendar: CalendarId, events: List[GEvent])
+  def deleteEvents(calendar: CalendarId, events: List[GEvent])
                   (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
-      Task.gather(events.map(removeEvent(calendar, _)))
+      Task.gather(events.map(deleteEvent(calendar, _)))
         .map(_ => ())
     }
 
@@ -266,6 +288,9 @@ case class CalendarManager(calendarService: CalendarService) {
         Observable.fromIterable(newEvents)
           .mapTask(newEvent => Task(findEventUpdate(oldEvents, newEvent)))
 
+      //val week = newEvents.headOption.map(event => WeekOfYear(Event.fromGEvent(event).start.atOffset(Utils.zoneOffset).toLocalDate).startDate)
+      //println("new events " + week + ": " + newEvents.map(event => Event.fromGEvent(event).line).mkString("(", ", ", ")"))
+
       for {
         /*e <- eventUpdates.toListL
         _ = if (e.exists(u => !u.isInstanceOf[UpdateEventResult.KeepOld])) {
@@ -291,9 +316,10 @@ case class CalendarManager(calendarService: CalendarService) {
           .flatMap(Observable.fromIterable(_))
           .toListL
 
-        remove = oldEvents diff keep
+        delete = oldEvents diff keep
 
-        _ <- removeEvents(calendar, remove)
+        _ <- deleteEvents(calendar, delete)
+        _ = delete.foreach(event => println("deleted " + Event.fromGEvent(event).line))
       } yield ()
     }
 
@@ -314,12 +340,14 @@ case class CalendarManager(calendarService: CalendarService) {
                 (implicit batch: Batch = null): Task[Unit] =
     batched { implicit batch =>
       for {
-        _ <- purgeCalendar(calendar)
         //_ = println("Updating " + calendar.name + " " + week.startDate)
         //_ = println(events.toString().replace("\n", ""))
         oldEvents <- listEvents(calendar, week).toListL
+        newEvents = filter(events, week)
         //_ = println(oldEvents)
-        _ <- updateEvents(calendar, oldEvents, filter(events, week))
+        _ = println("new events 1 " + week.startDate + ": " + events.map(event => Event.fromGEvent(event).line).mkString("(", ", ", ")"))
+        _ = println("new events 2 " + week.startDate + ": " + newEvents.map(event => Event.fromGEvent(event).line).mkString("(", ", ", ")"))
+        _ <- updateEvents(calendar, oldEvents, events) // TODO filter!
       } yield ()
     }
 
@@ -330,7 +358,7 @@ case class CalendarManager(calendarService: CalendarService) {
     batched { implicit batch =>
       for {
         oldEvents <- listEvents(calendar, week).toListL
-        _ <- removeEvents(calendar, oldEvents)
+        _ <- deleteEvents(calendar, oldEvents)
         _ <- addEvents(calendar, filter(events, week))
         _ = println(s"week $week ${week.startDate}: removed ${oldEvents.size} events; adding ${events.size}")
       } yield ()
@@ -345,18 +373,18 @@ object CalendarManager {
     override def onSuccess(t: T, responseHeaders: HttpHeaders): Unit = ()
   }
 
-  def filter(events: List[GEvent], min: OffsetDateTime, max: OffsetDateTime): List[GEvent] =
+  def filter(events: List[GEvent], min: Instant, max: Instant): List[GEvent] =
     events.filter { event =>
-      val start = Option(event.getStart.getDateTime).getOrElse(event.getStart.getDate).toDateTime
-      (min == null || start.isEqual(min) || start.isAfter(min)) &&
-        (max == null || start.isEqual(max) || start.isBefore(max))
+      val start = Option(event.getStart.getDateTime).getOrElse(event.getStart.getDate).toDateTime.toInstant
+      (min == null || start.compareTo(min) >= 0) &&
+        (max == null || start.compareTo(max) <= 0)
     }
 
   def filter(events: List[GEvent], date: LocalDate): List[GEvent] =
-    filter(events, date.dayStart, date.dayStart.plusDays(1))
+    filter(events, date.dayStart.toInstant, date.dayEnd.toInstant)
 
   def filter(events: List[GEvent], week: WeekOfYear): List[GEvent] =
-    filter(events, week.startDate.dayStart, week.endDate.dayStart)
+    filter(events, week.startDate.dayStart.toInstant, week.endDate.dayStart.toInstant)
 
   class Batch(calendarService: CalendarService) {
     private val atomicRequests: Atomic[List[AbstractGoogleJsonClientRequest[_]]] =

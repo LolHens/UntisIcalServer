@@ -1,6 +1,7 @@
 package org.lolhens.untisicalserver.util
 
 import java.time._
+import java.time.temporal.{ChronoField, TemporalField}
 import java.util.{Date, TimeZone}
 
 import com.google.api.client.util.DateTime
@@ -9,9 +10,10 @@ import com.google.api.services.calendar.model.EventDateTime
 object GoogleConverters {
 
   implicit class GoogleDateTimeOs(val dateTime: DateTime) extends AnyVal {
-    def toDateTime: OffsetDateTime =
-      Instant.ofEpochMilli(dateTime.getValue)
-        .atOffset(ZoneOffset.ofTotalSeconds(dateTime.getTimeZoneShift * 60))
+    def toDateTime: OffsetDateTime = {
+      val zoneOffset = ZoneOffset.ofTotalSeconds(dateTime.getTimeZoneShift * 60)
+      Instant.ofEpochMilli(dateTime.getValue).atOffset(zoneOffset)
+    }
 
     def toEventDateTime: EventDateTime = {
       val eventDateTime = new EventDateTime()

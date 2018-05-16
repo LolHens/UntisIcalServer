@@ -21,7 +21,7 @@ object Utils {
     componentList
   }
 
-  implicit val offsetDateTimeOrdering: Ordering[OffsetDateTime] = Ordering.fromLessThan(_ isBefore _)
+  //implicit val offsetDateTimeOrdering: Ordering[OffsetDateTime] = Ordering.fromLessThan(_ isBefore _)
 
   def zoneOffset: ZoneOffset = OffsetDateTime.now().getOffset
 

@@ -38,7 +38,7 @@ case class Event(summary: String,
   }
 
   def line: String = toString
-    .replaceAll("\r|\n", "")
+    .replaceAll("\r\n|\n", " ")
 }
 
 object Event {
