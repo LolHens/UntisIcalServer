@@ -177,7 +177,7 @@ case class CalendarManager(calendarService: CalendarService) {
             }(null)
           }
           .completedL
-      }, delete = false))
+      }))
     } yield ())
       .completedL
   }
