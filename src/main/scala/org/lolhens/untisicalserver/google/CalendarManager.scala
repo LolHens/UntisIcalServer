@@ -273,10 +273,9 @@ case class CalendarManager(calendarService: CalendarService) {
     }.map(UpdateEventResult.Replace(_, event))
 
 
-    def _addNew: UpdateEventResult =
-      _keepOld.orElse(_replace).getOrElse(UpdateEventResult.AddNew(event))
+    def _addNew: UpdateEventResult = UpdateEventResult.AddNew(event)
 
-    _addNew
+    _keepOld.orElse(_replace).getOrElse(_addNew)
   }
 
   def updateEvents(calendar: CalendarId,
@@ -292,11 +291,6 @@ case class CalendarManager(calendarService: CalendarService) {
       //println("new events " + week + ": " + newEvents.map(event => Event.fromGEvent(event).line).mkString("(", ", ", ")"))
 
       for {
-        /*e <- eventUpdates.toListL
-        _ = if (e.exists(u => !u.isInstanceOf[UpdateEventResult.KeepOld])) {
-          println(e.mkString("\n"))
-          println(oldEvents.map(Event.fromGEvent).map(_.line).mkString("\n"))
-        }*/
         keep <- eventUpdates.mapTask[Option[GEvent]] {
           case UpdateEventResult.KeepOld(oldEvent) =>
             Task.now(Some(oldEvent))
