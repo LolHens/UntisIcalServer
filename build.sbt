@@ -56,11 +56,14 @@ lazy val settings = Seq(
       ).filterNot(_.isEmpty).mkString("\n")
     }
 
-    def defaultUniversalScript(javaOpts: Seq[String] = Seq.empty, shebang: Boolean = true): Seq[String] = {
+    def defaultUniversalScript(javaOpts: Seq[String] = Seq.empty,
+                               shebang: Boolean = true,
+                               console: Boolean = true): Seq[String] = {
+      val javaCommand = s"${if (console) "java" else "javaw"} -jar"
       val javaOptsString = javaOpts.map(_ + " ").mkString
       Seq(universalScript(
-        shellCommands = s"""exec java -jar $javaOptsString$$JAVA_OPTS "$$0" "$$@"""",
-        cmdCommands = s"""java -jar $javaOptsString%JAVA_OPTS% "%~dpnx0" %*""",
+        shellCommands = s"""exec $javaCommand $javaOptsString$$JAVA_OPTS "$$0" "$$@"""",
+        cmdCommands = s"""$javaCommand $javaOptsString%JAVA_OPTS% "%~dpnx0" %*""",
         shebang = shebang
       ))
     }
