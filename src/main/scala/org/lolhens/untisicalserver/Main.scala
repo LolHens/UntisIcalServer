@@ -34,7 +34,7 @@ object Main {
     val iCalServer = new ICalServer(config)
     val err1 = iCalServer.start
 
-    val err2 = Google.updateCalendarContinuously(30.seconds).delayExecution(10.seconds)
+    val err2 = Google.updateCalendarsContinuously(30.seconds).delayExecution(10.seconds)
 
     def loop[A](task: Task[A], name: String): Task[A] =
       task

@@ -2,8 +2,9 @@ package org.lolhens.untisicalserver
 
 import monix.eval.Task
 import monix.reactive.Observable
-import org.lolhens.untisicalserver.data.config.{Config, School, SchoolClass}
+import org.lolhens.untisicalserver.data.config.{Config, SchoolClass}
 import org.lolhens.untisicalserver.google.CalendarManager.CalendarId
+import org.lolhens.untisicalserver.google.CalendarManager.CalendarId._
 import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
 
 import scala.concurrent.duration._
@@ -15,37 +16,51 @@ object Google {
 
   //Utils.setLogLevel
 
-  val calendarEntryTask: Task[CalendarId] =
-    (for {
-      calendarManager <- calendarManagerTask
-      calendars <- calendarManager.listCalendars
-      calendar = calendars("FS-15B Stundenplan")
-    } yield calendar)
-      .memoizeOnSuccess
+  def calendarName(schoolClass: SchoolClass): String = s"${schoolClass.name} Stundenplan"
 
-  lazy val schools: List[School] = Config.load.schools
+  lazy val calendarsTask: Task[Map[SchoolClass, CalendarId]] = for {
+    schools <- Task(Config.load.schools)
+    calendarManager <- calendarManagerTask
+    calendars <- calendarManager.listCalendars
+    classCalendars <- Task.sequence {
+      for {
+        school <- schools
+        schoolClass <- school.classes
+      } yield for {
+        calendarId <- calendars.get(calendarName(schoolClass)).map(Task.now).getOrElse {
+          calendarManager.createCalendar(calendarName(schoolClass)).map(_.id)
+        }
+      } yield
+        schoolClass -> calendarId
+    }
+  } yield
+    classCalendars.toMap
 
-  lazy val schoolClass: SchoolClass = schools.flatMap(_.classes).find(_.ref == "fs15b").get
-
-  val updateCalendar: Task[Unit] = {
+  def updateCalendar(schoolClass: SchoolClass, calendarId: CalendarId): Task[Unit] = {
     for {
       calendarManager <- Observable.fromTask(calendarManagerTask)
-      calendarId <- Observable.fromTask(calendarEntryTask)
       calendars <- Observable.fromTask(schoolClass.calendars.calendars)
       _ = println(s"Updating calendar ${calendarId.name}")
       //_ = println(calendars)
       _ <- Observable.fromTask(calendarManager.purgeCalendar(calendarId))
       (week, calendar) <- Observable.fromIterable(calendars.toSeq)
       events = calendar.events.map(_.toGEvent)
-    } yield
-      calendarManager.updateWeek(calendarId, week, events)
+      _ <- Observable.fromTask(calendarManager.updateWeek(calendarId, week, events))
+    } yield ()
   }
-    //.mapParallelUnordered(16)(identity)
-    .mapTask(identity)
     .completedL
 
-  def updateCalendarContinuously(interval: FiniteDuration): Task[Unit] =
+  val updateCalendars: Task[Unit] = {
+    for {
+      calendars <- Observable.fromTask(calendarsTask)
+      (schoolClass, calendarId) <- Observable.fromIterable(calendars)
+      _ <- Observable.fromTask(updateCalendar(schoolClass, calendarId))
+    } yield ()
+  }
+    .completedL
+
+  def updateCalendarsContinuously(interval: FiniteDuration): Task[Unit] =
     Observable.timerRepeated(30.seconds, interval, ())
-      .mapTask(_ => updateCalendar)
+      .mapTask(_ => updateCalendars)
       .completedL
 }

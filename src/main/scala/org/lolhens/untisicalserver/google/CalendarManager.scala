@@ -262,13 +262,14 @@ case class CalendarManager(calendarService: CalendarService) {
                               event: GEvent): UpdateEventResult = {
     val newEvent = Event.fromGEvent(event)
 
-    def _keepOld: Option[UpdateEventResult] = oldEvents.find { oldEvent =>
-      Event.fromGEvent(oldEvent) == newEvent
-    }.map(UpdateEventResult.KeepOld(_))
+    def _keepOld: Option[UpdateEventResult] = oldEvents.find { event =>
+      val oldEvent = Event.fromGEvent(event)
+      oldEvent == newEvent
+    }.map(UpdateEventResult.KeepOld)
 
-    def _replace: Option[UpdateEventResult] = oldEvents.find { oldEvent =>
-      oldEvent.getStart.toDateTime == event.getStart.toDateTime &&
-        oldEvent.getEnd.toDateTime == event.getEnd.toDateTime
+    def _replace: Option[UpdateEventResult] = oldEvents.find { event =>
+      val oldEvent = Event.fromGEvent(event)
+      oldEvent.start == newEvent.start && oldEvent.end == newEvent.end
     }.map(UpdateEventResult.Replace(_, event))
 
 
