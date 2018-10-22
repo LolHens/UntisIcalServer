@@ -14,15 +14,10 @@ import scala.language.postfixOps
   * Created by pierr on 24.03.2017.
   */
 object CalendarRequester {
-  def padInt(int: Int, digits: Int): String = int.toString.reverse.padTo(digits, "0").reverse.mkString
-
-  def dateString(date: LocalDate): String =
-    s"${padInt(date.getYear, 4)}-${padInt(date.getMonthValue, 2)}-${padInt(date.getDayOfMonth, 2)}"
-
   def iCalUrl(schoolClass: SchoolClass, week: WeekOfYear): String = {
     val school = schoolClass.school.id
     val elemId = schoolClass.id
-    val date = dateString(week.midDate)
+    val date = week.midDate.toString
     s"https://mese.webuntis.com/WebUntis/Ical.do?school=$school&elemType=1&elemId=$elemId&rpt_sd=$date"
   }
 
