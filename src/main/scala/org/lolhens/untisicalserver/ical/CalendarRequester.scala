@@ -1,7 +1,5 @@
 package org.lolhens.untisicalserver.ical
 
-import java.time.LocalDate
-
 import monix.eval.{Task, TaskCircuitBreaker}
 import org.lolhens.untisicalserver.data.Calendar
 import org.lolhens.untisicalserver.data.config.SchoolClass

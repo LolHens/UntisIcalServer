@@ -13,7 +13,7 @@ lazy val settings = Seq(
   ),
 
   libraryDependencies ++= Seq(
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    //"org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.slf4j" % "slf4j-api" % "1.7.25",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
@@ -31,7 +31,7 @@ lazy val settings = Seq(
   ),
 
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
+  //addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
   addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.2.4"),
 
   scalacOptions ++= Seq("-Xmax-classfile-name", "127"),

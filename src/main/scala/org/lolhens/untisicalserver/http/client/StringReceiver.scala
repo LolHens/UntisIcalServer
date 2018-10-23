@@ -1,11 +1,7 @@
 package org.lolhens.untisicalserver.http.client
 
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
-
 import com.ning.http.util.ProxyUtils
 import dispatch.{Http, as, url}
-import javax.net.ssl._
 import monix.eval.Task
 import org.lolhens.untisicalserver.http.client.StringReceiver._
 
@@ -33,31 +29,4 @@ class StringReceiver(timeout: Duration = defaultTimeout) {
 
 object StringReceiver {
   private val defaultTimeout = 5 minutes
-
-  object FakeSSL {
-
-    object FakeHostnameVerifier extends HostnameVerifier {
-      def verify(hostname: String, session: SSLSession): Boolean = true
-    }
-
-    private class FakeX509TrustManager extends X509TrustManager {
-      def checkClientTrusted(chain: Array[X509Certificate], authType: String): Unit = ()
-
-      def checkServerTrusted(chain: Array[X509Certificate], authType: String): Unit = ()
-
-      def getAcceptedIssuers: Array[X509Certificate] = Array.empty
-    }
-
-    object FakeSSLContext {
-      private lazy val _trustManagers = Array[TrustManager](new FakeX509TrustManager())
-
-      def apply(): SSLContext = {
-        val context = SSLContext.getInstance("TLS")
-        context.init(null, _trustManagers, new SecureRandom())
-        context
-      }
-    }
-
-  }
-
 }
