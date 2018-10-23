@@ -24,8 +24,8 @@ case class School(id: String,
       .toListL
       .map(_.toMap)
 
-  def updateCacheContinuously(interval: FiniteDuration): Task[Unit] =
+  /*def updateCacheContinuously(interval: FiniteDuration): Task[Unit] =
     Observable.timerRepeated(0.seconds, interval, ())
       .mapTask(_ => updateCache)
-      .completedL
+      .completedL*/
 }

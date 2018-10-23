@@ -4,7 +4,9 @@ import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import monix.execution.schedulers.AsyncScheduler
 import monix.execution.{ExecutionModel, Scheduler, UncaughtExceptionReporter}
+import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.config.Config
+import org.lolhens.untisicalserver.google.Google
 import org.lolhens.untisicalserver.http.server.ICalServer
 import org.lolhens.untisicalserver.util.Utils
 
@@ -22,36 +24,43 @@ object Main {
 
     val config = Config.load
 
-    def newScheduler: Scheduler = AsyncScheduler(
-      Scheduler.DefaultScheduledExecutor,
-      ExecutionContext.fromExecutor(null),
-      UncaughtExceptionReporter.LogExceptionsToStandardErr,
-      ExecutionModel.Default
-    )
-
-    val err0 = Task.sequence(config.schools.map(_.updateCacheContinuously(30.seconds)))
-
     val iCalServer = new ICalServer(config)
-    val err1 = iCalServer.start
 
-    //val err2 = Google.updateCalendarsContinuously(30.seconds).delayExecution(10.seconds)
+    executeParallelBlocking(Seq(
+      retry("Calendar Fetcher", loop(Task.gather(config.schools.map(_.updateCache)), 30.seconds)),
+      retry("ICal Server", iCalServer.start),
+    ) ++ Seq(
+      retry("Google Calendar Server", loop(Google.updateCalendars, 30.seconds, initialDelay = 60.seconds))
+    ).filter(_ => config.googleservice))
 
-    def loop[A](task: Task[A], name: String): Task[A] =
-      task
-        .doOnFinish { errOption =>
-          println(s"$name ended")
-          errOption.foreach(_.printStackTrace())
-          errOption.map(Task.raiseError).getOrElse(Task.unit)
-        }
-        .onErrorRestartLoop(0) { (_, _, retry) => retry(0).delayExecution(5.seconds) }
+    println("program ended")
+  }
 
-    Await.result(Task.gatherUnordered(Seq(
-      loop(err0.executeOn(newScheduler), "Calendar Fetcher"),
-      loop(err1.executeOn(newScheduler), "ICal Server"),
-      //loop(err2.executeOn(newScheduler), "Google Calendar Server")
-    )).runAsync, Duration.Inf)
+  private def createNewScheduler: Scheduler = AsyncScheduler(
+    Scheduler.DefaultScheduledExecutor,
+    ExecutionContext.fromExecutor(null),
+    UncaughtExceptionReporter.LogExceptionsToStandardErr,
+    ExecutionModel.Default
+  )
 
-    println("ended")
+  private def loop[T](task: Task[T],
+                      interval: FiniteDuration,
+                      initialDelay: FiniteDuration = Duration.Zero): Task[Unit] =
+    Observable.timerRepeated(initialDelay, interval, ())
+      .mapTask(_ => task)
+      .completedL
+
+  private def retry[T](name: String, task: Task[T]): Task[T] =
+    task
+      .doOnFinish { errOption =>
+        println(s"$name ended")
+        errOption.foreach(_.printStackTrace())
+        errOption.map(Task.raiseError).getOrElse(Task.unit)
+      }
+      .onErrorRestartLoop(0) { (_, _, retry) => retry(0).delayExecution(5.seconds) }
+
+  private def executeParallelBlocking(tasks: Seq[Task[Unit]]): Unit = {
+    Await.result(Task.gatherUnordered(tasks.map(_.executeOn(createNewScheduler))).runAsync, Duration.Inf)
   }
 }
 

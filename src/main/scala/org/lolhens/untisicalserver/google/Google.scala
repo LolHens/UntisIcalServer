@@ -58,8 +58,8 @@ object Google {
   }
     .completedL
 
-  def updateCalendarsContinuously(interval: FiniteDuration): Task[Unit] =
+  /*def updateCalendarsContinuously(interval: FiniteDuration): Task[Unit] =
     Observable.timerRepeated(30.seconds, interval, ())
       .mapTask(_ => updateCalendars)
-      .completedL
+      .completedL*/
 }

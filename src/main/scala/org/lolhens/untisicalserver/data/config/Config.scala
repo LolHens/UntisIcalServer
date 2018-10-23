@@ -8,6 +8,7 @@ import pureconfig._
 
 case class Config(locale: Option[String],
                   timezone: Option[String],
+                  googleservice: Boolean,
                   schools: List[School]) {
   def getSchoolClass(schoolRef: String, classRef: String): Option[SchoolClass] =
     schools.filter(_.ref.equalsIgnoreCase(schoolRef)).flatMap(_.classes).find(_.ref.equalsIgnoreCase(classRef))
