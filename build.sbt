@@ -19,6 +19,7 @@ lazy val settings = Seq(
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
     "org.typelevel" %% "cats-core" % "1.4.0",
     "io.monix" %% "monix" % "3.0.0-RC1",
+    "com.chuusai" %% "shapeless" % "2.3.3",
     "com.typesafe.akka" %% "akka-stream" % "2.5.17",
     "com.typesafe.akka" %% "akka-http" % "10.1.5",
     "io.spray" %% "spray-json" % "1.3.4",
@@ -30,8 +31,8 @@ lazy val settings = Seq(
     "com.google.apis" % "google-api-services-calendar" % "v3-rev355-1.25.0"
   ),
 
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
+  //addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+  //addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
   addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.2.4"),
 
   scalacOptions ++= Seq("-Xmax-classfile-name", "127"),
