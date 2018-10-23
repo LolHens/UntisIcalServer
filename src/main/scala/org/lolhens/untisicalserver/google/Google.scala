@@ -1,11 +1,10 @@
-package org.lolhens.untisicalserver
+package org.lolhens.untisicalserver.google
 
 import monix.eval.Task
 import monix.reactive.Observable
 import org.lolhens.untisicalserver.data.config.{Config, SchoolClass}
 import org.lolhens.untisicalserver.google.CalendarManager.CalendarId
 import org.lolhens.untisicalserver.google.CalendarManager.CalendarId._
-import org.lolhens.untisicalserver.google.{Authorize, CalendarManager}
 
 import scala.concurrent.duration._
 

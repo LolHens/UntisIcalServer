@@ -5,7 +5,7 @@ mainClass := Some("org.lolhens.untisicalserver.Main")
 lazy val settings = Seq(
   version := "2.0.6-SNAPSHOT",
 
-  scalaVersion := "2.12.6",
+  scalaVersion := "2.12.7",
 
   resolvers ++= Seq(
     "lolhens-maven" at "http://artifactory.lolhens.de/artifactory/maven-public/",
@@ -22,16 +22,16 @@ lazy val settings = Seq(
     "com.typesafe.akka" %% "akka-stream" % "2.5.17",
     "com.typesafe.akka" %% "akka-http" % "10.1.5",
     "io.spray" %% "spray-json" % "1.3.4",
-    "net.databinder.dispatch" %% "dispatch-core" % "0.12.3",
+    "net.databinder.dispatch" %% "dispatch-core" % "0.13.4",
     "org.mnode.ical4j" % "ical4j" % "2.2.0",
-    "com.github.pureconfig" %% "pureconfig" % "0.9.1",
+    "com.github.pureconfig" %% "pureconfig" % "0.9.2",
     "com.google.api-client" % "google-api-client" % "1.26.0",
     "com.google.oauth-client" % "google-oauth-client-jetty" % "1.26.0",
     "com.google.apis" % "google-api-services-calendar" % "v3-rev355-1.25.0"
   ),
 
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
-  //addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
   addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.2.4"),
 
   scalacOptions ++= Seq("-Xmax-classfile-name", "127"),

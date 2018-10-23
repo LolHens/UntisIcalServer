@@ -34,7 +34,7 @@ object Main {
     val iCalServer = new ICalServer(config)
     val err1 = iCalServer.start
 
-    val err2 = Google.updateCalendarsContinuously(30.seconds).delayExecution(10.seconds)
+    //val err2 = Google.updateCalendarsContinuously(30.seconds).delayExecution(10.seconds)
 
     def loop[A](task: Task[A], name: String): Task[A] =
       task
@@ -48,7 +48,7 @@ object Main {
     Await.result(Task.gatherUnordered(Seq(
       loop(err0.executeOn(newScheduler), "Calendar Fetcher"),
       loop(err1.executeOn(newScheduler), "ICal Server"),
-      loop(err2.executeOn(newScheduler), "Google Calendar Server")
+      //loop(err2.executeOn(newScheduler), "Google Calendar Server")
     )).runAsync, Duration.Inf)
 
     println("ended")

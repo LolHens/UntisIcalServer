@@ -43,9 +43,9 @@ case class Event(summary: String,
 
 object Event {
   def fromVEvent(vEvent: VEvent): Event = Event(
-    vEvent.getSummary.getValue,
-    vEvent.getDescription.getValue,
-    vEvent.getLocation.getValue,
+    Option(vEvent.getSummary).map(_.getValue).getOrElse(""),
+    Option(vEvent.getDescription).map(_.getValue).getOrElse(""),
+    Option(vEvent.getLocation).map(_.getValue).getOrElse(""),
     vEvent.getStartDate.getDate.toInstant,
     vEvent.getEndDate.getDate.toInstant
   )
