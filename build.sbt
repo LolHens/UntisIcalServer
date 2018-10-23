@@ -5,7 +5,7 @@ mainClass := Some("org.lolhens.untisicalserver.Main")
 lazy val settings = Seq(
   version := "2.0.6-SNAPSHOT",
 
-  scalaVersion := "2.12.4",
+  scalaVersion := "2.12.6",
 
   resolvers ++= Seq(
     "lolhens-maven" at "http://artifactory.lolhens.de/artifactory/maven-public/",
