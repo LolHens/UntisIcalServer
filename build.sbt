@@ -39,7 +39,16 @@ lazy val settings = Seq(
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(prependShellScript = Some(AssemblyPlugin.defaultUniversalScript(shebang = true))),
 
-  assemblyJarName in assembly := s"${name.value}-${version.value}.sh.bat"
+  assemblyJarName in assembly := s"${name.value}-${version.value}.sh.bat",
+
+  assembly / assemblyMergeStrategy := {
+    case "module-info.class" => MergeStrategy.discard
+    case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.first
+    case PathList("META-INF", "maven", "com.facebook", "nailgun-server", _*) => MergeStrategy.first
+    case x =>
+      val oldStrategy = (assembly / assemblyMergeStrategy).value
+      oldStrategy(x)
+  }
 )
 
 def packageConfFolder(confName: String) = Seq(
