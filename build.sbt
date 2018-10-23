@@ -3,7 +3,7 @@ name := "UntisIcalServer"
 mainClass := Some("org.lolhens.untisicalserver.Main")
 
 lazy val settings = Seq(
-  version := "2.0.6-SNAPSHOT",
+  version := "2.0.6",
 
   scalaVersion := "2.12.7",
 
