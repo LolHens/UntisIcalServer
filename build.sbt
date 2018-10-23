@@ -22,7 +22,7 @@ lazy val settings = Seq(
     "com.typesafe.akka" %% "akka-stream" % "2.5.17",
     "com.typesafe.akka" %% "akka-http" % "10.1.5",
     "io.spray" %% "spray-json" % "1.3.4",
-    "net.databinder.dispatch" %% "dispatch-core" % "0.13.4",
+    "org.dispatchhttp" %% "dispatch-core" % "1.0.0",
     "org.mnode.ical4j" % "ical4j" % "2.2.0",
     "com.github.pureconfig" %% "pureconfig" % "0.9.2",
     "com.google.api-client" % "google-api-client" % "1.26.0",
