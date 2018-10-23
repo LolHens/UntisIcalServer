@@ -1,6 +1,7 @@
 package org.lolhens.untisicalserver.data.config
 
 import java.io.File
+import java.nio.file.{Path, Paths}
 import java.util.{Locale, TimeZone}
 
 import com.typesafe.config.ConfigFactory
@@ -21,8 +22,14 @@ case class Config(locale: Option[String],
 }
 
 object Config {
-  private def config = ConfigFactory.load()
-    .withFallback(ConfigFactory.parseFile(new File("../conf/application.conf")))
+  def jarPath: Path = Paths.get(new File(getClass.getProtectionDomain.getCodeSource.getLocation.toURI.getPath).getPath)
+
+  def primaryConf: Path = jarPath.resolveSibling("application.conf")
+  def secondaryConf: Path = jarPath.getParent.resolveSibling("conf").resolve("application.conf")
+
+  def config = ConfigFactory.parseFile(primaryConf.toFile)
+    .withFallback(ConfigFactory.parseFile(secondaryConf.toFile)) // TODO: deprecate?
+    .withFallback(ConfigFactory.load())
 
   lazy val load: Config = loadConfig[Config](config, "icalserver") match {
     case Right(config) => config
