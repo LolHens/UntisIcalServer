@@ -404,8 +404,10 @@ object CalendarManager {
 
     def execute: Task[Unit] =
       (for {
-        groupedRequests <- Observable.fromTask(Task(atomicRequests.get.reverse.grouped(500)))
-        requests <- Observable.fromIterator(groupedRequests)
+        requests <- Observable.fromIterator {
+          val groupedRequests = Task(atomicRequests.get.reverse.grouped(500))
+          groupedRequests
+        }
         _ <- Observable.fromTask(execute(requests))
       } yield ())
         .completedL

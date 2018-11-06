@@ -18,7 +18,7 @@ lazy val settings = Seq(
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
     "org.typelevel" %% "cats-core" % "1.4.0",
-    "io.monix" %% "monix" % "3.0.0-RC1",
+    "io.monix" %% "monix" % "3.0.0-RC2",
     "com.chuusai" %% "shapeless" % "2.3.3",
     "com.typesafe.akka" %% "akka-stream" % "2.5.17",
     "com.typesafe.akka" %% "akka-http" % "10.1.5",

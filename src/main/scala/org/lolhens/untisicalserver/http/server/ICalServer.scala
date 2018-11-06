@@ -12,8 +12,8 @@ import monix.eval.Task
 import monix.execution.Scheduler
 import org.lolhens.untisicalserver.data.config.Config
 
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 
 /**
   * Created by pierr on 31.08.2016.
@@ -46,7 +46,7 @@ class ICalServer(config: Config) {
       connection.handleWith(Flow[HttpRequest].collect {
         case r@HttpRequest(GET, Uri.Path(ClassId(schoolRef, classRef)), _, _, _) if config.getSchoolClass(schoolRef, classRef).nonEmpty =>
           val schoolClass = config.getSchoolClass(schoolRef, classRef).get
-          val calendar = Await.result(schoolClass.calendars.calendar.runAsync, Duration.Inf)
+          val calendar = schoolClass.calendars.calendar.runSyncUnsafe(Duration.Inf)
           val response = calendar.icalString.getBytes(StandardCharsets.UTF_8)
 
           r.discardEntityBytes()

@@ -10,8 +10,8 @@ import org.lolhens.untisicalserver.google.Google
 import org.lolhens.untisicalserver.http.server.ICalServer
 import org.lolhens.untisicalserver.util.Utils
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
 import scala.language.postfixOps
 
 
@@ -39,7 +39,7 @@ object Main {
   private def createNewScheduler: Scheduler = AsyncScheduler(
     Scheduler.DefaultScheduledExecutor,
     ExecutionContext.fromExecutor(null),
-    UncaughtExceptionReporter.LogExceptionsToStandardErr,
+    UncaughtExceptionReporter.default,
     ExecutionModel.Default
   )
 
@@ -47,7 +47,7 @@ object Main {
                       interval: FiniteDuration,
                       initialDelay: FiniteDuration = Duration.Zero): Task[Unit] =
     Observable.timerRepeated(initialDelay, interval, ())
-      .mapTask(_ => task)
+      .mapEval(_ => task)
       .completedL
 
   private def retry[T](name: String, task: Task[T]): Task[T] =
@@ -59,8 +59,7 @@ object Main {
       }
       .onErrorRestartLoop(0) { (_, _, retry) => retry(0).delayExecution(5.seconds) }
 
-  private def executeParallelBlocking(tasks: Seq[Task[Unit]]): Unit = {
-    Await.result(Task.gatherUnordered(tasks.map(_.executeOn(createNewScheduler))).runAsync, Duration.Inf)
-  }
+  private def executeParallelBlocking(tasks: Seq[Task[Unit]]): Unit =
+    Task.gatherUnordered(tasks.map(_.executeOn(createNewScheduler))).runSyncUnsafe(Duration.Inf)
 }
 
